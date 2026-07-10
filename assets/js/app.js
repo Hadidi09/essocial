@@ -5,6 +5,7 @@
   const STORAGE_KEY = "esd-studio-saved-designs";
   const BRAND_KEY = "esd-studio-brand";
   const LOGO_SRC = "assets/images/logo-esd.jpg";
+  const ELLIPSIS = "\u2026";
 
   const canvas = document.getElementById("designCanvas");
   const ctx = canvas.getContext("2d");
@@ -60,6 +61,7 @@
   };
 
   function init() {
+    installDynamicControls();
     buildFormatSelect();
     bindEvents();
     applyBrandToUi();
@@ -126,6 +128,10 @@
       requestRender();
     });
 
+    if (els.resetTemplate) {
+      els.resetTemplate.addEventListener("click", resetCurrentTemplate);
+    }
+
     els.saveDesign.addEventListener("click", saveCurrentDesign);
     els.clearSaved.addEventListener("click", () => {
       if (!confirm("Supprimer toutes les sauvegardes locales ?")) return;
@@ -137,6 +143,22 @@
     els.exportPng.addEventListener("click", () => exportImage("image/png", "png"));
     els.exportJpg.addEventListener("click", () => exportImage("image/jpeg", "jpg"));
     els.exportPdf.addEventListener("click", exportPdf);
+  }
+
+  function installDynamicControls() {
+    const contentHeading = els.fieldEditor.closest(".editor-section")?.querySelector(".section-heading");
+    if (contentHeading && !document.getElementById("resetTemplate")) {
+      const reset = document.createElement("button");
+      reset.className = "secondary-button";
+      reset.id = "resetTemplate";
+      reset.type = "button";
+      reset.textContent = "R\u00e9initialiser";
+      reset.title = "Recharger les textes, image et ic\u00f4ne du mod\u00e8le";
+      reset.style.minHeight = "34px";
+      reset.style.padding = "7px 10px";
+      contentHeading.appendChild(reset);
+      els.resetTemplate = reset;
+    }
   }
 
   function buildFormatSelect() {
@@ -227,8 +249,14 @@
       const label = document.createElement("label");
       label.textContent = item.label;
       const input = document.createElement(item.type === "textarea" ? "textarea" : "input");
+      const limits = fieldUiLimits(item);
       input.value = state.fields[item.key] || "";
       input.placeholder = item.value || "";
+      input.maxLength = limits.maxLength;
+      if (input.tagName === "TEXTAREA") {
+        input.rows = limits.rows;
+        input.style.minHeight = `${limits.rows * 28}px`;
+      }
       input.addEventListener("input", () => {
         state.fields[item.key] = input.value;
         requestRender();
@@ -236,6 +264,14 @@
       label.appendChild(input);
       els.fieldEditor.appendChild(label);
     });
+  }
+
+  function fieldUiLimits(item) {
+    const key = item.key.toLowerCase();
+    if (key === "items") return { maxLength: 900, rows: 8 };
+    if (["details", "quote"].includes(key)) return { maxLength: 420, rows: 5 };
+    if (["title", "subtitle", "competition"].includes(key)) return { maxLength: 90, rows: 2 };
+    return { maxLength: 140, rows: 3 };
   }
 
   function renderMediaBank() {
@@ -323,6 +359,11 @@
     requestRender();
   }
 
+  function resetCurrentTemplate() {
+    selectTemplate(state.templateId);
+    setStatus("Mod\u00e8le r\u00e9initialis\u00e9");
+  }
+
   function saveCurrentDesign() {
     const saved = readJson(STORAGE_KEY, []);
     const template = getTemplate(state.templateId);
@@ -363,15 +404,30 @@
     saved.forEach((item) => {
       const row = document.createElement("div");
       row.className = "saved-item";
+      row.style.gridTemplateColumns = "1fr auto auto";
       row.innerHTML = `<div><strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.savedAt)}</small></div>`;
       const load = document.createElement("button");
       load.type = "button";
       load.title = "Charger";
       load.textContent = "↺";
       load.addEventListener("click", () => selectTemplate(item.templateId, item));
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.title = "Supprimer cette sauvegarde";
+      remove.setAttribute("aria-label", "Supprimer cette sauvegarde");
+      remove.textContent = "\u00d7";
+      remove.addEventListener("click", () => deleteSavedDesign(item.id));
       row.appendChild(load);
+      row.appendChild(remove);
       els.savedList.appendChild(row);
     });
+  }
+
+  function deleteSavedDesign(id) {
+    const saved = readJson(STORAGE_KEY, []);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.filter((item) => item.id !== id)));
+    renderSavedList();
+    setStatus("Sauvegarde supprim\u00e9e");
   }
 
   function requestRender() {
@@ -472,6 +528,7 @@
     drawFitText(text("title").toUpperCase(), 44 * u, 150 * u, w * 0.72, {
       size: h > w ? 92 * u : 70 * u,
       min: 44 * u,
+      maxHeight: 104 * u,
       color: b.white,
       weight: 900,
       stroke: b.red,
@@ -527,6 +584,7 @@
     drawFitText(text("title").toUpperCase(), 52 * u, 170 * u, w * 0.52, {
       size: 88 * u,
       min: 40 * u,
+      maxHeight: 104 * u,
       color: b.white,
       weight: 900,
     });
@@ -572,6 +630,7 @@
     drawFitText(text("title").toUpperCase(), 52 * u, 142 * u, w * 0.64, {
       size: 70 * u,
       min: 36 * u,
+      maxHeight: 82 * u,
       color: b.dark,
       weight: 900,
     });
@@ -583,9 +642,10 @@
     });
     drawPill(text("date"), 54 * u, 225 * u, Math.min(520 * u, w * 0.5), 44 * u, b.blue, b.white);
 
-    const rows = lines(text("items"));
     const startY = 310 * u;
-    const rowH = Math.min(82 * u, (h - startY - 110 * u) / Math.max(rows.length, 1));
+    const listAvailable = h - startY - 128 * u;
+    const rows = limitVisibleLines(lines(text("items")), Math.max(1, Math.floor(listAvailable / (46 * u))));
+    const rowH = Math.max(42 * u, Math.min(82 * u, listAvailable / Math.max(rows.length, 1)));
     rows.forEach((row, index) => {
       const y = startY + index * rowH;
       ctx.fillStyle = index % 2 ? "rgba(31,92,168,0.07)" : "rgba(210,15,31,0.07)";
@@ -616,6 +676,7 @@
     drawFitText(text("title").toUpperCase(), 52 * u, 154 * u, w * 0.72, {
       size: 80 * u,
       min: 44 * u,
+      maxHeight: 94 * u,
       color: b.white,
       weight: 900,
     });
@@ -626,11 +687,12 @@
       maxLines: 1,
     });
 
-    const rows = lines(text("items"));
     const boxX = 52 * u;
     const boxY = 250 * u;
     const boxW = w - 104 * u;
-    const rowH = Math.min(76 * u, (h - boxY - 130 * u) / Math.max(rows.length, 1));
+    const tableAvailable = h - boxY - 130 * u;
+    const rows = limitVisibleLines(lines(text("items")), Math.max(1, Math.floor(tableAvailable / (44 * u))));
+    const rowH = Math.max(40 * u, Math.min(76 * u, tableAvailable / Math.max(rows.length, 1)));
     rows.forEach((row, index) => {
       const y = boxY + index * rowH;
       ctx.fillStyle = index === 0 ? b.red : rgba(b.white, index % 2 ? 0.16 : 0.1);
@@ -663,6 +725,7 @@
     drawFitText(text("title").toUpperCase(), w * 0.53, 165 * u, w * 0.42, {
       size: 86 * u,
       min: 44 * u,
+      maxHeight: 104 * u,
       color: b.red,
       weight: 900,
     });
@@ -679,10 +742,10 @@
       maxLines: 2,
     });
 
-    const names = lines(text("items"));
     const top = 165 * u;
     const available = h - 395 * u;
-    const size = Math.min(48 * u, available / Math.max(names.length, 1) * 0.62);
+    const names = limitVisibleLines(lines(text("items")), Math.max(1, Math.floor(available / (38 * u))));
+    const size = Math.max(20 * u, Math.min(48 * u, available / Math.max(names.length, 1) * 0.62));
     names.forEach((name, index) => {
       drawFitText(name.toUpperCase(), 100 * u, top + index * (available / Math.max(names.length, 1)) + size, w * 0.34, {
         size,
@@ -726,18 +789,22 @@
     });
     drawWrappedText(text("title").toUpperCase(), 52 * u, 255 * u, w * 0.58, {
       size: h > w ? 78 * u : 60 * u,
+      min: 34 * u,
       color: b.white,
       weight: 900,
       lineHeight: (h > w ? 82 : 64) * u,
       maxLines: 4,
+      maxHeight: 270 * u,
     });
     drawWrappedText(text("details"), 56 * u, h - 320 * u, w * 0.58, {
       size: 27 * u,
+      min: 18 * u,
       color: b.white,
       family: b.bodyFont,
       weight: 700,
       lineHeight: 38 * u,
       maxLines: 4,
+      maxHeight: 150 * u,
     });
     drawPill(`${text("date")} · ${text("location")}`, 52 * u, h - 118 * u, w - 104 * u, 62 * u, b.white, b.red);
   }
@@ -759,15 +826,18 @@
     drawFitText(text("title").toUpperCase(), 52 * u, 160 * u, w * 0.62, {
       size: 58 * u,
       min: 34 * u,
+      maxHeight: 72 * u,
       color: b.white,
       weight: 900,
     });
     drawWrappedText(text("name").toUpperCase(), 52 * u, 265 * u, w * 0.54, {
       size: 84 * u,
+      min: 38 * u,
       color: b.white,
       weight: 900,
       lineHeight: 88 * u,
       maxLines: 3,
+      maxHeight: 215 * u,
     });
     drawPill(text("role"), 52 * u, h - 288 * u, Math.min(430 * u, w * 0.52), 52 * u, b.white, b.red);
     drawWrappedText(text("stats"), 56 * u, h - 205 * u, w - 112 * u, {
@@ -778,11 +848,13 @@
     });
     drawWrappedText(`“${text("quote")}”`, 56 * u, h - 110 * u, w - 112 * u, {
       size: 24 * u,
+      min: 16 * u,
       color: b.white,
       family: b.bodyFont,
       weight: 700,
       lineHeight: 34 * u,
       maxLines: 3,
+      maxHeight: 92 * u,
     });
   }
 
@@ -1330,8 +1402,20 @@
     });
   }
 
+  function truncateText(value, maxWidth) {
+    let textValue = String(value || "");
+    if (!textValue) return "";
+    if (ctx.measureText(textValue).width <= maxWidth) return textValue;
+
+    const ellipsis = "…";
+    while (textValue.length && ctx.measureText(textValue + ellipsis).width > maxWidth) {
+      textValue = textValue.slice(0, -1);
+    }
+    return textValue ? `${textValue}${ellipsis}` : "";
+  }
+
   function drawFitText(value, x, y, maxWidth, options) {
-    const textValue = String(value || "");
+    let textValue = String(value || "");
     let size = options.size;
     const minSize = options.min || size * 0.55;
     ctx.save();
@@ -1343,6 +1427,9 @@
       size -= 2;
     }
     setFont(size, options.weight || 800, options.family || state.brand.titleFont);
+    if (ctx.measureText(textValue).width > maxWidth) {
+      textValue = truncateText(textValue, maxWidth);
+    }
     if (options.stroke) {
       ctx.lineWidth = Math.max(3, size * 0.08);
       ctx.strokeStyle = options.stroke;
@@ -1355,16 +1442,32 @@
 
   function drawWrappedText(value, x, y, maxWidth, options) {
     const textValue = String(value || "");
-    const size = options.size || 24;
+    let size = options.size || 24;
+    const minSize = options.min || size * 0.55;
     const lineHeight = options.lineHeight || size * 1.18;
     const maxLines = options.maxLines || 8;
+    let lines;
+
     ctx.save();
     ctx.textAlign = options.align || "left";
     ctx.textBaseline = "alphabetic";
-    setFont(size, options.weight || 700, options.family || state.brand.titleFont);
     ctx.fillStyle = options.color || state.brand.dark;
-    const wrapped = wrapText(textValue, maxWidth).slice(0, maxLines);
-    wrapped.forEach((line, index) => {
+
+    while (true) {
+      setFont(size, options.weight || 700, options.family || state.brand.titleFont);
+      lines = wrapText(textValue, maxWidth);
+      if (lines.length <= maxLines || size <= minSize) break;
+      size -= 2;
+    }
+
+    if (lines.length > maxLines) {
+      lines = lines.slice(0, maxLines);
+      if (lines.length) {
+        lines[lines.length - 1] = truncateText(lines[lines.length - 1], maxWidth);
+      }
+    }
+
+    lines.forEach((line, index) => {
       ctx.fillText(line, xForAlign(x, maxWidth, ctx.textAlign), y + index * lineHeight, maxWidth);
     });
     ctx.restore();
@@ -1411,6 +1514,213 @@
         chunks.push(chunk);
         chunk = char;
       }
+    });
+    if (chunk) chunks.push(chunk);
+    return chunks;
+  }
+
+  function normalizeCanvasText(value, preserveBreaks = false) {
+    const source = String(value || "").replace(/\r/g, "");
+    if (preserveBreaks) {
+      return source
+        .split("\n")
+        .map((line) => line.replace(/\s+/g, " ").trim())
+        .join("\n")
+        .trim();
+    }
+    return source.replace(/\s+/g, " ").trim();
+  }
+
+  function resolveTextBoxX(x, maxWidth, align) {
+    if (align === "center" && x + maxWidth > canvas.width * 1.04 && x - maxWidth / 2 >= 0) {
+      return x - maxWidth / 2;
+    }
+    if (align === "right" && x - maxWidth >= 0) {
+      return x - maxWidth;
+    }
+    return x;
+  }
+
+  function clipTextBox(x, y, maxWidth, maxHeight, size, align) {
+    const boxX = resolveTextBoxX(x, maxWidth, align);
+    const height = Math.max(size * 1.25, maxHeight || size * 1.35);
+    ctx.beginPath();
+    ctx.rect(boxX, y - size, maxWidth, height);
+    ctx.clip();
+    return boxX;
+  }
+
+  function truncateText(value, maxWidth) {
+    const clean = normalizeCanvasText(value);
+    if (!clean || maxWidth <= 0) return "";
+    if (ctx.measureText(clean).width <= maxWidth) return clean;
+    if (ctx.measureText(ELLIPSIS).width > maxWidth) return "";
+
+    const chars = Array.from(clean);
+    let low = 0;
+    let high = chars.length;
+    let best = "";
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2);
+      const candidate = `${chars.slice(0, mid).join("").trimEnd()}${ELLIPSIS}`;
+      if (ctx.measureText(candidate).width <= maxWidth) {
+        best = candidate;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+    return best;
+  }
+
+  function drawPill(value, x, y, w, h, fillColor, color) {
+    if (w <= 0 || h <= 0) return;
+    ctx.save();
+    ctx.fillStyle = fillColor;
+    roundRect(x, y, w, h, Math.min(8, h * 0.18));
+    ctx.fill();
+    drawWrappedText(value, x + h * 0.32, y + h * 0.64, w - h * 0.64, {
+      size: h * 0.38,
+      min: h * 0.24,
+      color,
+      weight: 900,
+      maxLines: 1,
+      maxHeight: h * 0.52,
+      align: "center",
+    });
+    ctx.restore();
+  }
+
+  function drawFitText(value, x, y, maxWidth, options) {
+    const align = options.align || "left";
+    let textValue = normalizeCanvasText(value);
+    if (!textValue || maxWidth <= 0) return;
+
+    let size = Math.min(options.size, options.maxHeight ? options.maxHeight * 0.86 : options.size);
+    const minSize = options.min || size * 0.52;
+    const family = options.family || state.brand.titleFont;
+    const weight = options.weight || 800;
+    const maxHeight = options.maxHeight || size * 1.25;
+
+    ctx.save();
+    ctx.textAlign = align;
+    ctx.textBaseline = "alphabetic";
+    while (size > minSize) {
+      setFont(size, weight, family);
+      if (ctx.measureText(textValue).width <= maxWidth) break;
+      size -= 2;
+    }
+    setFont(size, weight, family);
+    if (ctx.measureText(textValue).width > maxWidth) {
+      textValue = truncateText(textValue, maxWidth);
+    }
+
+    if (options.clip !== false) {
+      clipTextBox(x, y, maxWidth, maxHeight, size, align);
+    }
+
+    const boxX = resolveTextBoxX(x, maxWidth, align);
+    const drawX = xForAlign(boxX, maxWidth, align);
+    if (options.stroke && textValue) {
+      ctx.lineWidth = Math.max(3, size * 0.08);
+      ctx.strokeStyle = options.stroke;
+      ctx.strokeText(textValue, drawX, y, maxWidth);
+    }
+    ctx.fillStyle = options.color || state.brand.dark;
+    ctx.fillText(textValue, drawX, y, maxWidth);
+    ctx.restore();
+  }
+
+  function drawWrappedText(value, x, y, maxWidth, options) {
+    const textValue = normalizeCanvasText(value, true);
+    if (!textValue || maxWidth <= 0) return;
+
+    const align = options.align || "left";
+    const family = options.family || state.brand.titleFont;
+    const weight = options.weight || 700;
+    const originalSize = options.size || 24;
+    const minSize = options.min || originalSize * 0.52;
+    const lineRatio = options.lineHeight ? options.lineHeight / originalSize : 1.18;
+    const maxLines = Math.max(1, options.maxLines || 8);
+    const maxHeight = options.maxHeight || Infinity;
+    let size = originalSize;
+    let lineHeight = size * lineRatio;
+    let visibleLineCount = maxLines;
+    let wrapped = [];
+
+    ctx.save();
+    ctx.textAlign = align;
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = options.color || state.brand.dark;
+
+    while (size >= minSize) {
+      setFont(size, weight, family);
+      lineHeight = Math.max(size * 1.05, size * lineRatio);
+      const heightLimit = Number.isFinite(maxHeight) ? Math.max(1, Math.floor((maxHeight + size * 0.18) / lineHeight)) : maxLines;
+      visibleLineCount = Math.max(1, Math.min(maxLines, heightLimit));
+      wrapped = wrapText(textValue, maxWidth);
+      if (wrapped.length <= visibleLineCount) break;
+      size -= 2;
+    }
+
+    setFont(size, weight, family);
+    lineHeight = Math.max(size * 1.05, size * lineRatio);
+    const heightLimit = Number.isFinite(maxHeight) ? Math.max(1, Math.floor((maxHeight + size * 0.18) / lineHeight)) : maxLines;
+    visibleLineCount = Math.max(1, Math.min(maxLines, heightLimit));
+
+    if (wrapped.length > visibleLineCount) {
+      wrapped = wrapped.slice(0, visibleLineCount);
+      wrapped[wrapped.length - 1] = truncateText(wrapped[wrapped.length - 1], maxWidth);
+    } else {
+      wrapped = wrapped.map((line) => truncateText(line, maxWidth));
+    }
+
+    const boxX = options.clip === false ? resolveTextBoxX(x, maxWidth, align) : clipTextBox(x, y, maxWidth, Number.isFinite(maxHeight) ? maxHeight : visibleLineCount * lineHeight, size, align);
+    const drawX = xForAlign(boxX, maxWidth, align);
+    wrapped.forEach((line, index) => {
+      ctx.fillText(line, drawX, y + index * lineHeight, maxWidth);
+    });
+    ctx.restore();
+  }
+
+  function wrapText(value, maxWidth) {
+    const output = [];
+    const paragraphs = String(value || "").split("\n");
+    paragraphs.forEach((paragraph) => {
+      const words = paragraph.trim().split(/\s+/).filter(Boolean);
+      if (!words.length) return;
+      let line = "";
+      words.forEach((word) => {
+        const candidate = line ? `${line} ${word}` : word;
+        if (ctx.measureText(candidate).width <= maxWidth) {
+          line = candidate;
+          return;
+        }
+        if (line) output.push(line);
+        if (ctx.measureText(word).width <= maxWidth) {
+          line = word;
+          return;
+        }
+        const chunks = breakLongWord(word, maxWidth);
+        output.push(...chunks.slice(0, -1));
+        line = chunks[chunks.length - 1] || "";
+      });
+      if (line) output.push(line);
+    });
+    return output;
+  }
+
+  function breakLongWord(word, maxWidth) {
+    const chunks = [];
+    let chunk = "";
+    Array.from(String(word || "")).forEach((char) => {
+      const candidate = chunk + char;
+      if (ctx.measureText(candidate).width <= maxWidth || !chunk) {
+        chunk = candidate;
+        return;
+      }
+      chunks.push(chunk);
+      chunk = char;
     });
     if (chunk) chunks.push(chunk);
     return chunks;
@@ -1468,6 +1778,15 @@
       .split(/\n/)
       .map((item) => item.trim())
       .filter(Boolean);
+  }
+
+  function limitVisibleLines(items, maxItems) {
+    const limit = Math.max(1, Math.floor(maxItems || 1));
+    if (items.length <= limit) return items;
+    const visible = items.slice(0, limit);
+    const hidden = items.length - limit + 1;
+    visible[visible.length - 1] = `+ ${hidden} autre${hidden > 1 ? "s" : ""}${ELLIPSIS}`;
+    return visible;
   }
 
   function loadImage(src) {
