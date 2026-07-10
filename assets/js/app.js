@@ -536,7 +536,7 @@
 
     drawPill(text("competition"), 46 * u, 178 * u, Math.min(360 * u, w * 0.45), 42 * u, b.red, b.white);
 
-    const panelY = h > w ? h - 330 * u : h - 230 * u;
+    const panelY = h > w ? h - 330 * u : h - 300 * u;
     const teamSize = h > w ? 54 * u : 42 * u;
     drawWrappedText(text("homeTeam").toUpperCase(), 48 * u, panelY + 72 * u, w * 0.86, {
       size: teamSize,
@@ -552,18 +552,19 @@
       lineHeight: teamSize,
       maxLines: 2,
     });
-    drawWrappedText(`${text("time")} · ${text("date")}`, 50 * u, panelY + 220 * u, w * 0.82, {
+    drawWrappedText(`${text("time")} · ${text("date")}`, 50 * u, panelY + 212 * u, w * 0.82, {
       size: 34 * u,
       color: b.white,
       weight: 800,
       maxLines: 2,
     });
-    drawWrappedText(text("location"), 50 * u, panelY + 268 * u, w * 0.82, {
+    drawWrappedText(text("location"), 50 * u, panelY + 252 * u, w * 0.82, {
       size: 24 * u,
       color: b.white,
       weight: 700,
       family: b.bodyFont,
       maxLines: 2,
+      maxHeight: 72 * u,
     });
     drawFooterBrand(w, h, logo);
   }
