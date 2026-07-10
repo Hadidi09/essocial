@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ES Doubs Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <img src="assets/images/logo-esd.jpg" alt="Logo ES Doubs" />
+          <div>
+            <span class="eyebrow">ES Doubs 25300</span>
+            <h1>Studio Communication</h1>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <label class="search-box">
+            <span aria-hidden="true">⌕</span>
+            <input id="templateSearch" type="search" placeholder="Rechercher un modèle" />
+          </label>
+          <button class="icon-button" id="adminToggle" type="button" title="Mode admin">
+            <span aria-hidden="true">⚙</span>
+            <span class="sr-only">Mode admin</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="library-panel" aria-label="Bibliothèque de modèles">
+          <div class="section-heading">
+            <h2>Modèles</h2>
+            <span id="templateCount">0</span>
+          </div>
+          <nav class="category-tabs" id="categoryTabs" aria-label="Catégories"></nav>
+          <div class="template-grid" id="templateGrid"></div>
+        </aside>
+
+        <section class="preview-panel" aria-label="Aperçu du visuel">
+          <div class="preview-toolbar">
+            <div>
+              <span class="eyebrow" id="currentCategory">Matchs</span>
+              <h2 id="currentTemplateName">Affiche de match</h2>
+            </div>
+            <label class="select-control">
+              Format
+              <select id="formatSelect"></select>
+            </label>
+          </div>
+          <div class="canvas-stage">
+            <canvas id="designCanvas" width="1080" height="1080" aria-label="Aperçu exportable"></canvas>
+          </div>
+          <div class="preview-meta">
+            <span id="formatMeta">1080 × 1080 px</span>
+            <span id="autosaveState">Prêt</span>
+          </div>
+        </section>
+
+        <aside class="editor-panel" aria-label="Éditeur">
+          <div class="panel-scroll">
+            <section class="editor-section">
+              <div class="section-heading">
+                <h2>Contenu</h2>
+              </div>
+              <div id="fieldEditor" class="field-stack"></div>
+            </section>
+
+            <section class="editor-section">
+              <div class="section-heading">
+                <h2>Médias</h2>
+              </div>
+              <div class="upload-zone" id="dropZone">
+                <input id="imageUpload" type="file" accept="image/*" />
+                <strong>Déposer une photo</strong>
+                <span>ou choisir un fichier</span>
+              </div>
+              <div class="media-bank" id="mediaBank"></div>
+              <label class="file-row">
+                Logo partenaire
+                <input id="partnerUpload" type="file" accept="image/*" />
+              </label>
+            </section>
+
+            <section class="editor-section">
+              <div class="section-heading">
+                <h2>Icône</h2>
+              </div>
+              <div class="icon-bank" id="iconBank"></div>
+            </section>
+
+            <section class="editor-section admin-section" id="adminPanel" hidden>
+              <div class="section-heading">
+                <h2>Identité</h2>
+                <span>Admin</span>
+              </div>
+              <div class="brand-grid">
+                <label>Rouge <input id="brandRed" type="color" /></label>
+                <label>Bleu <input id="brandBlue" type="color" /></label>
+                <label>Or <input id="brandGold" type="color" /></label>
+                <label>Noir <input id="brandDark" type="color" /></label>
+              </div>
+              <label class="input-row">Police titres <input id="brandTitleFont" type="text" /></label>
+              <label class="input-row">Police texte <input id="brandBodyFont" type="text" /></label>
+              <button class="secondary-button" id="resetBrand" type="button">Réinitialiser</button>
+            </section>
+
+            <section class="editor-section">
+              <div class="section-heading">
+                <h2>Sauvegarde</h2>
+              </div>
+              <div class="action-row">
+                <button class="secondary-button" id="saveDesign" type="button">Enregistrer</button>
+                <button class="secondary-button" id="clearSaved" type="button">Vider</button>
+              </div>
+              <div class="saved-list" id="savedList"></div>
+            </section>
+
+            <section class="editor-section export-section">
+              <div class="section-heading">
+                <h2>Export</h2>
+              </div>
+              <div class="action-row three">
+                <button class="primary-button" id="exportPng" type="button">PNG</button>
+                <button class="primary-button" id="exportJpg" type="button">JPG</button>
+                <button class="primary-button" id="exportPdf" type="button">PDF</button>
+              </div>
+            </section>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script src="assets/js/templates.js"></script>
+    <script src="assets/js/app.js"></script>
+  </body>
+</html>
