@@ -4,7 +4,7 @@
   const data = window.ESD_APP_DATA;
   const STORAGE_KEY = "esd-studio-saved-designs";
   const BRAND_KEY = "esd-studio-brand";
-  const LOGO_SRC = "assets/images/logo-esd.jpg";
+  const LOGO_SRC = "assets/images/esdlogo.png";
   const ELLIPSIS = "\u2026";
 
   const canvas = document.getElementById("designCanvas");
@@ -511,6 +511,9 @@
 
     const renderer = renderers[template.layout] || renderInfo;
     renderer(assets);
+    if (assets.partnerLogo && template.layout !== "sponsor") {
+      drawPartnerBadge(assets.partnerLogo, format.width, format.height, unit(format.width, format.height));
+    }
   }
 
   function renderMatch({ format, photo, logo, icon }) {
@@ -1386,6 +1389,19 @@
     ctx.fillStyle = accentColor;
     ctx.fillRect(x, y + size * 0.78, size, size * 0.22);
     if (icon) drawContain(icon, x + size * 0.18, y + size * 0.12, size * 0.64, size * 0.64);
+    ctx.restore();
+  }
+
+  function drawPartnerBadge(partnerLogo, w, h, u) {
+    if (!partnerLogo) return;
+    const size = Math.min(120 * u, w * 0.14, h * 0.14);
+    const x = 28 * u;
+    const y = h - size - 28 * u;
+    ctx.save();
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    roundRect(x, y, size, size, 14 * u);
+    ctx.fill();
+    drawContain(partnerLogo, x + 12 * u, y + 12 * u, size - 24 * u, size - 24 * u);
     ctx.restore();
   }
 
