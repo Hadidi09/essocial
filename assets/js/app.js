@@ -61,7 +61,6 @@
   };
 
   function init() {
-    installDynamicControls();
     buildFormatSelect();
     bindEvents();
     applyBrandToUi();
@@ -123,7 +122,12 @@
 
     els.resetBrand.addEventListener("click", () => {
       state.brand = { ...data.brandDefaults };
-      localStorage.removeItem(BRAND_KEY);
+      try {
+        localStorage.removeItem(BRAND_KEY);
+      } catch (error) {
+        console.warn(error);
+        setStatus("Réinitialisation de l'identité impossible");
+      }
       applyBrandToUi();
       requestRender();
     });
@@ -135,9 +139,14 @@
     els.saveDesign.addEventListener("click", saveCurrentDesign);
     els.clearSaved.addEventListener("click", () => {
       if (!confirm("Supprimer toutes les sauvegardes locales ?")) return;
-      localStorage.removeItem(STORAGE_KEY);
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        setStatus("Sauvegardes supprimées");
+      } catch (error) {
+        console.warn(error);
+        setStatus("Suppression impossible (stockage indisponible)");
+      }
       renderSavedList();
-      setStatus("Sauvegardes supprimées");
     });
 
     els.exportPng.addEventListener("click", () => exportImage("image/png", "png"));
@@ -145,21 +154,6 @@
     els.exportPdf.addEventListener("click", exportPdf);
   }
 
-  function installDynamicControls() {
-    const contentHeading = els.fieldEditor.closest(".editor-section")?.querySelector(".section-heading");
-    if (contentHeading && !document.getElementById("resetTemplate")) {
-      const reset = document.createElement("button");
-      reset.className = "secondary-button";
-      reset.id = "resetTemplate";
-      reset.type = "button";
-      reset.textContent = "R\u00e9initialiser";
-      reset.title = "Recharger les textes, image et ic\u00f4ne du mod\u00e8le";
-      reset.style.minHeight = "34px";
-      reset.style.padding = "7px 10px";
-      contentHeading.appendChild(reset);
-      els.resetTemplate = reset;
-    }
-  }
 
   function buildFormatSelect() {
     els.formatSelect.innerHTML = "";
@@ -175,9 +169,13 @@
     els.categoryTabs.innerHTML = "";
     data.categories.forEach((category) => {
       const count = data.templates.filter((template) => template.category === category.id).length;
+      const isActive = category.id === selectedCategory;
       const button = document.createElement("button");
       button.type = "button";
-      button.className = category.id === selectedCategory ? "active" : "";
+      button.className = isActive ? "active" : "";
+      button.setAttribute("role", "tab");
+      button.setAttribute("aria-selected", String(isActive));
+      button.setAttribute("aria-label", `${category.name} (${count} modèles)`);
       button.innerHTML = `<span>${escapeHtml(category.name)}</span><strong>${count}</strong>`;
       button.addEventListener("click", () => {
         selectedCategory = category.id;
@@ -208,9 +206,12 @@
     }
 
     templates.forEach((template) => {
+      const isActive = template.id === state.templateId;
       const button = document.createElement("button");
       button.type = "button";
-      button.className = `template-card${template.id === state.templateId ? " active" : ""}`;
+      button.className = `template-card${isActive ? " active" : ""}`;
+      button.setAttribute("aria-pressed", String(isActive));
+      button.setAttribute("aria-label", `${template.name}, ${template.description}`);
       button.innerHTML = `<strong>${escapeHtml(template.name)}</strong><span>${escapeHtml(template.description)}</span>`;
       button.addEventListener("click", () => selectTemplate(template.id));
       els.templateGrid.appendChild(button);
@@ -277,10 +278,13 @@
   function renderMediaBank() {
     els.mediaBank.innerHTML = "";
     data.media.forEach((media) => {
+      const isActive = state.imageSrc === media.src;
       const button = document.createElement("button");
       button.type = "button";
       button.title = media.name;
-      button.className = state.imageSrc === media.src ? "active" : "";
+      button.className = isActive ? "active" : "";
+      button.setAttribute("aria-pressed", String(isActive));
+      button.setAttribute("aria-label", `Image : ${media.name}`);
       const img = document.createElement("img");
       img.src = media.src;
       img.alt = media.name;
@@ -297,10 +301,13 @@
   function renderIconBank() {
     els.iconBank.innerHTML = "";
     data.icons.forEach((icon) => {
+      const isActive = state.iconId === icon.id;
       const button = document.createElement("button");
       button.type = "button";
       button.title = icon.name;
-      button.className = state.iconId === icon.id ? "active" : "";
+      button.className = isActive ? "active" : "";
+      button.setAttribute("aria-pressed", String(isActive));
+      button.setAttribute("aria-label", `Icône : ${icon.name}`);
       const img = document.createElement("img");
       img.src = icon.src;
       img.alt = icon.name;
@@ -335,7 +342,6 @@
     root.style.setProperty("--red", state.brand.red);
     root.style.setProperty("--blue", state.brand.blue);
     root.style.setProperty("--gold", state.brand.gold);
-    root.style.setProperty("--ink", state.brand.dark);
     els.brandRed.value = state.brand.red;
     els.brandBlue.value = state.brand.blue;
     els.brandGold.value = state.brand.gold;
@@ -354,7 +360,12 @@
       titleFont: els.brandTitleFont.value.trim() || data.brandDefaults.titleFont,
       bodyFont: els.brandBodyFont.value.trim() || data.brandDefaults.bodyFont,
     };
-    localStorage.setItem(BRAND_KEY, JSON.stringify(state.brand));
+    try {
+      localStorage.setItem(BRAND_KEY, JSON.stringify(state.brand));
+    } catch (error) {
+      console.warn(error);
+      setStatus("Identité non sauvegardée (stockage indisponible)");
+    }
     applyBrandToUi();
     requestRender();
   }
@@ -425,9 +436,14 @@
 
   function deleteSavedDesign(id) {
     const saved = readJson(STORAGE_KEY, []);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.filter((item) => item.id !== id)));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.filter((item) => item.id !== id)));
+      setStatus("Sauvegarde supprimée");
+    } catch (error) {
+      console.warn(error);
+      setStatus("Suppression impossible (stockage indisponible)");
+    }
     renderSavedList();
-    setStatus("Sauvegarde supprim\u00e9e");
   }
 
   function requestRender() {

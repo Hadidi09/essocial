@@ -20,9 +20,9 @@
           </div>
         </div>
         <div class="topbar-actions">
-          <label class="search-box">
+          <label class="search-box" aria-label="Rechercher un modèle">
             <span aria-hidden="true">⌕</span>
-            <input id="templateSearch" type="search" placeholder="Rechercher un modèle" />
+            <input id="templateSearch" type="search" placeholder="Rechercher un modèle" aria-label="Rechercher un modèle" />
           </label>
           <button class="icon-button" id="adminToggle" type="button" title="Mode admin">
             <span aria-hidden="true">⚙</span>
@@ -37,7 +37,7 @@
             <h2>Modèles</h2>
             <span id="templateCount">0</span>
           </div>
-          <nav class="category-tabs" id="categoryTabs" aria-label="Catégories"></nav>
+          <nav class="category-tabs" id="categoryTabs" role="tablist" aria-label="Catégories"></nav>
           <div class="template-grid" id="templateGrid"></div>
         </aside>
 
@@ -66,6 +66,7 @@
             <section class="editor-section">
               <div class="section-heading">
                 <h2>Contenu</h2>
+                <button class="secondary-button compact-button" id="resetTemplate" type="button" title="Recharger les textes, image et icône du modèle">Réinitialiser</button>
               </div>
               <div id="fieldEditor" class="field-stack"></div>
             </section>

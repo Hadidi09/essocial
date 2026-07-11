@@ -37,6 +37,14 @@ button {
   cursor: pointer;
 }
 
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(31, 92, 168, 0.7);
+  outline-offset: 2px;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -477,6 +485,11 @@ button {
   padding: 9px 12px;
   font-weight: 800;
   font-family: "Montserrat", "Segoe UI", Arial, sans-serif;
+}
+
+.compact-button {
+  min-height: 34px;
+  padding: 7px 10px;
 }
 
 .secondary-button:hover {
