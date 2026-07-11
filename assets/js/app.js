@@ -554,35 +554,48 @@
 
     drawPill(text("competition"), titleX, 226 * u, Math.min(360 * u, w * 0.45), 42 * u, b.red, b.white);
 
-    const panelY = h > w ? h - 330 * u : h - 300 * u;
-    const teamSize = h > w ? 54 * u : 42 * u;
-    drawWrappedText(text("homeTeam").toUpperCase(), 48 * u, panelY + 72 * u, w * 0.86, {
+    const portrait = h > w;
+    const panelY = portrait ? h - 520 * u : h - 420 * u;
+    const teamSize = portrait ? 54 * u : 42 * u;
+    const vsSize = portrait ? 40 * u : 34 * u;
+    const timeSize = portrait ? 34 * u : 30 * u;
+    const locationSize = portrait ? 24 * u : 22 * u;
+    const teamLine = panelY + (portrait ? 72 * u : 80 * u);
+    const vsLine = panelY + (portrait ? 142 * u : 150 * u);
+    const timeLine = panelY + (portrait ? 212 * u : 220 * u);
+    const locationLine = panelY + (portrait ? 266 * u : 276 * u);
+
+    drawWrappedText(text("homeTeam").toUpperCase(), 48 * u, teamLine, w * 0.86, {
       size: teamSize,
       color: b.white,
       weight: 900,
       lineHeight: teamSize * 1.05,
       maxLines: 2,
+      maxHeight: teamSize * 2.4,
     });
-    drawWrappedText(`VS ${text("awayTeam").toUpperCase()}`, 48 * u, panelY + 142 * u, w * 0.86, {
-      size: teamSize * 0.74,
+    drawWrappedText(`VS ${text("awayTeam").toUpperCase()}`, 48 * u, vsLine, w * 0.86, {
+      size: vsSize,
       color: b.gold,
       weight: 900,
-      lineHeight: teamSize,
-      maxLines: 2,
+      lineHeight: vsSize * 1.05,
+      maxLines: 1,
     });
-    drawWrappedText(`${text("time")} · ${text("date")}`, 50 * u, panelY + 212 * u, w * 0.82, {
-      size: 34 * u,
+    drawWrappedText(`${text("time")} · ${text("date")}`, 50 * u, timeLine, w * 0.82, {
+      size: timeSize,
+      min: timeSize * 0.7,
       color: b.white,
       weight: 800,
       maxLines: 2,
+      maxHeight: timeSize * 2.3,
     });
-    drawWrappedText(text("location"), 50 * u, panelY + 252 * u, w * 0.82, {
-      size: 24 * u,
+    drawWrappedText(text("location"), 50 * u, locationLine, w * 0.82, {
+      size: locationSize,
+      min: locationSize * 0.7,
       color: b.white,
       weight: 700,
       family: b.bodyFont,
       maxLines: 2,
-      maxHeight: 72 * u,
+      maxHeight: locationSize * 2.4,
     });
     drawFooterBrand(w, h, logo);
   }
@@ -762,22 +775,27 @@
     });
 
     const top = 165 * u;
-    const available = h - 395 * u;
-    const names = limitVisibleLines(lines(text("items")), Math.max(1, Math.floor(available / (38 * u))));
-    const size = Math.max(20 * u, Math.min(48 * u, available / Math.max(names.length, 1) * 0.62));
+    const coachY = h - 300 * u;
+    const listBottom = coachY - 48 * u;
+    const available = Math.max(60 * u, listBottom - top);
+    const maxRows = Math.max(1, Math.floor(available / (38 * u)));
+    const names = limitVisibleLines(lines(text("items")), maxRows);
+    const rowH = available / Math.max(names.length, 1);
+    const nameSize = Math.max(20 * u, Math.min(48 * u, rowH * 0.62));
     names.forEach((name, index) => {
-      drawFitText(name.toUpperCase(), 100 * u, top + index * (available / Math.max(names.length, 1)) + size, w * 0.34, {
-        size,
+      drawFitText(name.toUpperCase(), 100 * u, top + index * rowH + nameSize, w * 0.34, {
+        size: nameSize,
         min: 22 * u,
         color: b.white,
         weight: 900,
       });
     });
-    drawWrappedText(`Coach : ${text("coach")}`, 92 * u, h - 300 * u, w * 0.36, {
+    drawWrappedText(`Coach : ${text("coach")}`, 92 * u, coachY, w * 0.36, {
       size: 28 * u,
       color: b.white,
       weight: 800,
       maxLines: 2,
+      maxHeight: 66 * u,
     });
   }
 
@@ -805,8 +823,9 @@
       color: b.gold,
       weight: 900,
       maxLines: 2,
+      maxHeight: 60 * u,
     });
-    drawWrappedText(text("title").toUpperCase(), 52 * u, 255 * u, w * 0.58, {
+    drawWrappedText(text("title").toUpperCase(), 52 * u, 265 * u, w * 0.58, {
       size: h > w ? 78 * u : 60 * u,
       min: 34 * u,
       color: b.white,
@@ -858,12 +877,14 @@
       maxLines: 3,
       maxHeight: 215 * u,
     });
-    drawPill(text("role"), 52 * u, h - 288 * u, Math.min(430 * u, w * 0.52), 52 * u, b.white, b.red);
-    drawWrappedText(text("stats"), 56 * u, h - 205 * u, w - 112 * u, {
+    const roleY = h - 252 * u;
+    drawPill(text("role"), 52 * u, roleY, Math.min(430 * u, w * 0.52), 52 * u, b.white, b.red);
+    drawWrappedText(text("stats"), 56 * u, roleY - 70 * u, w - 112 * u, {
       size: 29 * u,
       color: b.white,
       weight: 900,
       maxLines: 2,
+      maxHeight: 68 * u,
     });
     drawWrappedText(`“${text("quote")}”`, 56 * u, h - 110 * u, w - 112 * u, {
       size: 24 * u,
@@ -1024,7 +1045,8 @@
       family: b.bodyFont,
       weight: 700,
       lineHeight: 40 * u,
-      maxLines: 5,
+      maxLines: 4,
+      maxHeight: 150 * u,
     });
     drawWrappedText(text("cta").toUpperCase(), 56 * u, h - 52 * u, w - 112 * u, {
       size: 28 * u,
@@ -1378,164 +1400,6 @@
     gradient.addColorStop(1, `rgba(0,0,0,${strength})`);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
-  }
-
-  function drawPill(value, x, y, w, h, fillColor, color) {
-    ctx.save();
-    ctx.fillStyle = fillColor;
-    roundRect(x, y, w, h, Math.min(8, h * 0.18));
-    ctx.fill();
-    drawWrappedText(value, x + h * 0.35, y + h * 0.64, w - h * 0.7, {
-      size: h * 0.38,
-      color,
-      weight: 900,
-      maxLines: 1,
-      align: "center",
-    });
-    ctx.restore();
-  }
-
-  function drawFooterBrand(w, h, logo) {
-    const b = state.brand;
-    const u = unit(w, h);
-    ctx.save();
-    ctx.globalAlpha = 0.86;
-    drawLogo(logo, 38 * u, h - 96 * u, 64 * u);
-    drawWrappedText("ES DOUBS", 112 * u, h - 52 * u, 260 * u, {
-      size: 23 * u,
-      color: b.white,
-      weight: 900,
-      maxLines: 1,
-    });
-    ctx.restore();
-  }
-
-  function drawFooterText(value, w, h, b) {
-    const u = unit(w, h);
-    drawWrappedText(value.toUpperCase(), 52 * u, h - 54 * u, w - 104 * u, {
-      size: 25 * u,
-      color: b.white,
-      weight: 900,
-      align: "center",
-      maxLines: 1,
-    });
-  }
-
-  function truncateText(value, maxWidth) {
-    let textValue = String(value || "");
-    if (!textValue) return "";
-    if (ctx.measureText(textValue).width <= maxWidth) return textValue;
-
-    const ellipsis = "…";
-    while (textValue.length && ctx.measureText(textValue + ellipsis).width > maxWidth) {
-      textValue = textValue.slice(0, -1);
-    }
-    return textValue ? `${textValue}${ellipsis}` : "";
-  }
-
-  function drawFitText(value, x, y, maxWidth, options) {
-    let textValue = String(value || "");
-    let size = options.size;
-    const minSize = options.min || size * 0.55;
-    ctx.save();
-    ctx.textAlign = options.align || "left";
-    ctx.textBaseline = "alphabetic";
-    while (size > minSize) {
-      setFont(size, options.weight || 800, options.family || state.brand.titleFont);
-      if (ctx.measureText(textValue).width <= maxWidth) break;
-      size -= 2;
-    }
-    setFont(size, options.weight || 800, options.family || state.brand.titleFont);
-    if (ctx.measureText(textValue).width > maxWidth) {
-      textValue = truncateText(textValue, maxWidth);
-    }
-    if (options.stroke) {
-      ctx.lineWidth = Math.max(3, size * 0.08);
-      ctx.strokeStyle = options.stroke;
-      ctx.strokeText(textValue, x, y, maxWidth);
-    }
-    ctx.fillStyle = options.color || state.brand.dark;
-    ctx.fillText(textValue, x, y, maxWidth);
-    ctx.restore();
-  }
-
-  function drawWrappedText(value, x, y, maxWidth, options) {
-    const textValue = String(value || "");
-    let size = options.size || 24;
-    const minSize = options.min || size * 0.55;
-    const lineHeight = options.lineHeight || size * 1.18;
-    const maxLines = options.maxLines || 8;
-    let lines;
-
-    ctx.save();
-    ctx.textAlign = options.align || "left";
-    ctx.textBaseline = "alphabetic";
-    ctx.fillStyle = options.color || state.brand.dark;
-
-    while (true) {
-      setFont(size, options.weight || 700, options.family || state.brand.titleFont);
-      lines = wrapText(textValue, maxWidth);
-      if (lines.length <= maxLines || size <= minSize) break;
-      size -= 2;
-    }
-
-    if (lines.length > maxLines) {
-      lines = lines.slice(0, maxLines);
-      if (lines.length) {
-        lines[lines.length - 1] = truncateText(lines[lines.length - 1], maxWidth);
-      }
-    }
-
-    lines.forEach((line, index) => {
-      ctx.fillText(line, xForAlign(x, maxWidth, ctx.textAlign), y + index * lineHeight, maxWidth);
-    });
-    ctx.restore();
-  }
-
-  function wrapText(value, maxWidth) {
-    const paragraphs = String(value || "").split(/\n/);
-    const output = [];
-    paragraphs.forEach((paragraph) => {
-      const words = paragraph.trim().split(/\s+/).filter(Boolean);
-      if (!words.length) {
-        output.push("");
-        return;
-      }
-      let line = "";
-      words.forEach((word) => {
-        const candidate = line ? `${line} ${word}` : word;
-        if (ctx.measureText(candidate).width <= maxWidth) {
-          line = candidate;
-          return;
-        }
-        if (line) output.push(line);
-        if (ctx.measureText(word).width <= maxWidth) {
-          line = word;
-          return;
-        }
-        const chunks = breakLongWord(word, maxWidth);
-        output.push(...chunks.slice(0, -1));
-        line = chunks[chunks.length - 1] || "";
-      });
-      if (line) output.push(line);
-    });
-    return output;
-  }
-
-  function breakLongWord(word, maxWidth) {
-    const chunks = [];
-    let chunk = "";
-    Array.from(word).forEach((char) => {
-      const candidate = chunk + char;
-      if (ctx.measureText(candidate).width <= maxWidth || !chunk) {
-        chunk = candidate;
-      } else {
-        chunks.push(chunk);
-        chunk = char;
-      }
-    });
-    if (chunk) chunks.push(chunk);
-    return chunks;
   }
 
   function normalizeCanvasText(value, preserveBreaks = false) {
