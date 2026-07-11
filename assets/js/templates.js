@@ -2,7 +2,12 @@
   const imagePath = "assets/images/";
   const iconPath = "assets/icons/";
 
-  const field = (key, label, value, type = "text") => ({ key, label, value, type });
+  const field = (key, label, value, type = "text") => ({
+    key,
+    label,
+    value,
+    type,
+  });
 
   const matchFields = (home, away, title = "NEXT GAME") => [
     field("title", "Titre", title),
@@ -20,7 +25,12 @@
     field("subtitle", "Sous-titre", subtitle),
     field("date", "Date", date),
     field("location", "Lieu", location),
-    field("details", "Détails", "Informations et inscriptions auprès du club.", "textarea"),
+    field(
+      "details",
+      "Détails",
+      "Informations et inscriptions auprès du club.",
+      "textarea",
+    ),
     field("cta", "Appel à l'action", "Contactez-nous"),
   ];
 
@@ -43,8 +53,18 @@
       bodyFont: "Open Sans, Segoe UI, Arial, sans-serif",
     },
     formats: [
-      { id: "instagram-square", name: "Instagram carré", width: 1080, height: 1080 },
-      { id: "instagram-portrait", name: "Instagram portrait", width: 1080, height: 1350 },
+      {
+        id: "instagram-square",
+        name: "Instagram carré",
+        width: 1080,
+        height: 1080,
+      },
+      {
+        id: "instagram-portrait",
+        name: "Instagram portrait",
+        width: 1080,
+        height: 1350,
+      },
       { id: "facebook", name: "Facebook", width: 1200, height: 630 },
       { id: "twitter", name: "Twitter / X", width: 1200, height: 675 },
       { id: "story", name: "Story", width: 1080, height: 1920 },
@@ -59,11 +79,31 @@
       { id: "administration", name: "Administration" },
     ],
     media: [
-      { id: "next", name: "Affiche joueur", src: imagePath + "next-game-reference.jpg" },
-      { id: "profile", name: "Profil joueur", src: imagePath + "player-profile.jpg" },
-      { id: "collage", name: "Action terrain", src: imagePath + "match-collage.jpg" },
-      { id: "captain", name: "Capitaine", src: imagePath + "captain-handshake.jpg" },
-      { id: "squad", name: "Groupe", src: imagePath + "squad-list-reference.jpg" },
+      {
+        id: "next",
+        name: "Affiche joueur",
+        src: imagePath + "captain-handshake.jpg",
+      },
+      {
+        id: "profile",
+        name: "Profil joueur",
+        src: imagePath + "player-profile.jpg",
+      },
+      {
+        id: "collage",
+        name: "Action terrain",
+        src: imagePath + "match-collage.jpg",
+      },
+      {
+        id: "captain",
+        name: "Capitaine",
+        src: imagePath + "captain-handshake.jpg",
+      },
+      {
+        id: "squad",
+        name: "Groupe",
+        src: imagePath + "squad-list-reference.jpg",
+      },
       { id: "youth", name: "Jeunes", src: imagePath + "youth-training.jpg" },
     ],
     icons: [
@@ -82,7 +122,7 @@
         description: "Annonce domicile ou extérieur avec photo forte.",
         layout: "match",
         defaultFormat: "instagram-portrait",
-        defaultImage: imagePath + "next-game-reference.jpg",
+        defaultImage: imagePath + "captain-handshake.jpg",
         defaultIcon: "calendar",
         fields: matchFields("ES Doubs", "Besançon Football", "NEXT GAME"),
       },
@@ -113,7 +153,12 @@
           field("awayTeam", "Équipe 2", "Besançon Football"),
           field("scoreHome", "Score ES Doubs", "3"),
           field("scoreAway", "Score adverse", "1"),
-          field("details", "Buteurs / résumé", "Buteurs : Yamine, Simon, Jules", "textarea"),
+          field(
+            "details",
+            "Buteurs / résumé",
+            "Buteurs : Yamine, Simon, Jules",
+            "textarea",
+          ),
         ],
       },
       {
@@ -129,7 +174,12 @@
           field("title", "Titre", "Programme du week-end"),
           field("subtitle", "Sous-titre", "Toutes les équipes ESD"),
           field("date", "Dates", "Samedi 14 & dimanche 15"),
-          field("items", "Lignes du programme", "U11 - 10h00 - Pontarlier\nU13 - 13h30 - Stade Paul Robbe\nSeniors - 15h00 - Complexe Saint-Claude", "textarea"),
+          field(
+            "items",
+            "Lignes du programme",
+            "U11 - 10h00 - Pontarlier\nU13 - 13h30 - Stade Paul Robbe\nSeniors - 15h00 - Complexe Saint-Claude",
+            "textarea",
+          ),
           field("footer", "Mention", "Bon match à toutes et tous"),
         ],
       },
@@ -145,7 +195,12 @@
         fields: [
           field("title", "Titre", "Classement"),
           field("subtitle", "Sous-titre", "Régional 3 - Journée 8"),
-          field("items", "Lignes du classement", "1. ES Doubs - 21 pts\n2. Besançon Football - 18 pts\n3. Valdahon - 16 pts\n4. Pontarlier B - 15 pts\n5. Morteau - 12 pts", "textarea"),
+          field(
+            "items",
+            "Lignes du classement",
+            "1. ES Doubs - 21 pts\n2. Besançon Football - 18 pts\n3. Valdahon - 16 pts\n4. Pontarlier B - 15 pts\n5. Morteau - 12 pts",
+            "textarea",
+          ),
           field("footer", "Mention", "Mise à jour après la J8"),
         ],
       },
@@ -162,7 +217,12 @@
           field("title", "Titre", "Le groupe"),
           field("subtitle", "Match", "ES Doubs - Besançon Football"),
           field("date", "Date", "Dimanche 8 février - 12h00"),
-          field("items", "Joueurs convoqués", "Tom\nJulian\nZie\nYamine\nNabil\nDjilali\nCedric\nSimon\nTristan\nJules\nJorge\nIdriss\nOmar", "textarea"),
+          field(
+            "items",
+            "Joueurs convoqués",
+            "Tom\nJulian\nZie\nYamine\nNabil\nDjilali\nCedric\nSimon\nTristan\nJules\nJorge\nIdriss\nOmar",
+            "textarea",
+          ),
           field("coach", "Coach", "Junior"),
         ],
       },
@@ -175,7 +235,12 @@
         defaultFormat: "instagram-square",
         defaultImage: imagePath + "youth-training.jpg",
         defaultIcon: "calendar",
-        fields: eventFields("Reprise des entraînements", "Préparation saison", "Mercredi 21 août - 18h30", "Complexe Saint-Claude"),
+        fields: eventFields(
+          "Reprise des entraînements",
+          "Préparation saison",
+          "Mercredi 21 août - 18h30",
+          "Complexe Saint-Claude",
+        ),
       },
       {
         id: "portes-ouvertes",
@@ -186,7 +251,12 @@
         defaultFormat: "facebook",
         defaultImage: imagePath + "youth-training.jpg",
         defaultIcon: "megaphone",
-        fields: eventFields("Portes ouvertes", "Viens essayer le football", "Samedi 7 septembre", "Stade de Doubs"),
+        fields: eventFields(
+          "Portes ouvertes",
+          "Viens essayer le football",
+          "Samedi 7 septembre",
+          "Stade de Doubs",
+        ),
       },
       {
         id: "inscriptions",
@@ -197,7 +267,12 @@
         defaultFormat: "instagram-portrait",
         defaultImage: imagePath + "captain-handshake.jpg",
         defaultIcon: "megaphone",
-        fields: eventFields("Inscriptions ouvertes", "Saison 2026-2027", "À partir du 1er août", "ES Doubs"),
+        fields: eventFields(
+          "Inscriptions ouvertes",
+          "Saison 2026-2027",
+          "À partir du 1er août",
+          "ES Doubs",
+        ),
       },
       {
         id: "stage-football",
@@ -208,7 +283,12 @@
         defaultFormat: "instagram-square",
         defaultImage: imagePath + "youth-training.jpg",
         defaultIcon: "ball",
-        fields: eventFields("Stage football", "U9 à U15", "Du 20 au 24 octobre", "Complexe Saint-Claude"),
+        fields: eventFields(
+          "Stage football",
+          "U9 à U15",
+          "Du 20 au 24 octobre",
+          "Complexe Saint-Claude",
+        ),
       },
       {
         id: "tournoi",
@@ -219,7 +299,12 @@
         defaultFormat: "facebook",
         defaultImage: imagePath + "match-collage.jpg",
         defaultIcon: "trophy",
-        fields: eventFields("Tournoi ES Doubs", "Catégories jeunes", "Dimanche 14 juin", "Stade de Doubs"),
+        fields: eventFields(
+          "Tournoi ES Doubs",
+          "Catégories jeunes",
+          "Dimanche 14 juin",
+          "Stade de Doubs",
+        ),
       },
       {
         id: "anniversaire-club",
@@ -234,7 +319,12 @@
           field("title", "Titre", "ES Doubs fête son histoire"),
           field("subtitle", "Sous-titre", "Depuis 1938"),
           field("date", "Date", "Samedi 28 juin"),
-          field("details", "Message", "Une journée pour réunir joueurs, éducateurs, bénévoles et supporters.", "textarea"),
+          field(
+            "details",
+            "Message",
+            "Une journée pour réunir joueurs, éducateurs, bénévoles et supporters.",
+            "textarea",
+          ),
           field("cta", "Mention", "Tous en rouge et bleu"),
         ],
       },
@@ -252,7 +342,12 @@
           field("name", "Nom", "Yamine"),
           field("role", "Poste", "Attaquant"),
           field("stats", "Stats", "1 but - 1 passe décisive - 78 minutes"),
-          field("quote", "Citation", "Un match solide au service du collectif.", "textarea"),
+          field(
+            "quote",
+            "Citation",
+            "Un match solide au service du collectif.",
+            "textarea",
+          ),
         ],
       },
       {
@@ -269,7 +364,12 @@
           field("name", "Nom", "Junior"),
           field("role", "Rôle", "Coach seniors"),
           field("stats", "Info courte", "Engagé au club depuis 2022"),
-          field("quote", "Citation", "Former, transmettre, faire progresser.", "textarea"),
+          field(
+            "quote",
+            "Citation",
+            "Former, transmettre, faire progresser.",
+            "textarea",
+          ),
         ],
       },
       {
@@ -286,7 +386,12 @@
           field("name", "Nom", "Marie"),
           field("role", "Mission", "Buvette & accueil"),
           field("stats", "Info courte", "Présente chaque week-end"),
-          field("quote", "Citation", "Le club avance grâce à toutes les mains disponibles.", "textarea"),
+          field(
+            "quote",
+            "Citation",
+            "Le club avance grâce à toutes les mains disponibles.",
+            "textarea",
+          ),
         ],
       },
       {
@@ -302,7 +407,12 @@
           field("title", "Titre", "Bienvenue"),
           field("name", "Nom du joueur", "Nabil"),
           field("role", "Poste", "Milieu"),
-          field("details", "Présentation", "Nabil rejoint l'ES Doubs pour renforcer le groupe seniors.", "textarea"),
+          field(
+            "details",
+            "Présentation",
+            "Nabil rejoint l'ES Doubs pour renforcer le groupe seniors.",
+            "textarea",
+          ),
           field("cta", "Mention", "Bienvenue à la maison"),
         ],
       },
@@ -319,7 +429,12 @@
           field("title", "Titre", "Merci"),
           field("name", "Nom du joueur", "Simon"),
           field("role", "Saison", "2024-2026"),
-          field("details", "Message", "Merci pour ton engagement, ton sérieux et les moments partagés sous le maillot rouge et bleu.", "textarea"),
+          field(
+            "details",
+            "Message",
+            "Merci pour ton engagement, ton sérieux et les moments partagés sous le maillot rouge et bleu.",
+            "textarea",
+          ),
           field("cta", "Mention", "Bonne continuation"),
         ],
       },
@@ -336,7 +451,12 @@
           field("title", "Titre", "Signature"),
           field("name", "Nom du joueur", "Jules"),
           field("role", "Catégorie", "Seniors"),
-          field("details", "Message", "Le joueur portera les couleurs de l'ES Doubs cette saison.", "textarea"),
+          field(
+            "details",
+            "Message",
+            "Le joueur portera les couleurs de l'ES Doubs cette saison.",
+            "textarea",
+          ),
           field("cta", "Mention", "Allez l'ESD"),
         ],
       },
@@ -352,7 +472,12 @@
         fields: [
           field("title", "Titre", "Sponsor de la semaine"),
           field("sponsor", "Nom partenaire", "Carrefour City"),
-          field("details", "Message", "Merci à notre partenaire pour son soutien à la vie du club.", "textarea"),
+          field(
+            "details",
+            "Message",
+            "Merci à notre partenaire pour son soutien à la vie du club.",
+            "textarea",
+          ),
           field("cta", "Mention", "Ensemble pour l'ES Doubs"),
         ],
       },
@@ -368,7 +493,12 @@
         fields: [
           field("title", "Titre", "Nouveau partenaire"),
           field("sponsor", "Nom partenaire", "Entreprise locale"),
-          field("details", "Message", "L'ES Doubs est heureux d'accueillir un nouveau soutien pour accompagner ses projets.", "textarea"),
+          field(
+            "details",
+            "Message",
+            "L'ES Doubs est heureux d'accueillir un nouveau soutien pour accompagner ses projets.",
+            "textarea",
+          ),
           field("cta", "Mention", "Bienvenue au club"),
         ],
       },
@@ -381,7 +511,11 @@
         defaultFormat: "instagram-square",
         defaultImage: imagePath + "next-game-reference.jpg",
         defaultIcon: "megaphone",
-        fields: infoFields("Information importante", "Le planning du week-end est modifié. Consultez les horaires mis à jour auprès de vos éducateurs.", "Vendredi 18h00"),
+        fields: infoFields(
+          "Information importante",
+          "Le planning du week-end est modifié. Consultez les horaires mis à jour auprès de vos éducateurs.",
+          "Vendredi 18h00",
+        ),
       },
       {
         id: "fermeture-exceptionnelle",
@@ -392,7 +526,11 @@
         defaultFormat: "instagram-square",
         defaultImage: imagePath + "youth-training.jpg",
         defaultIcon: "calendar",
-        fields: infoFields("Fermeture exceptionnelle", "Les installations seront fermées ce mercredi en raison de travaux sur le complexe.", "Mercredi 12 juin"),
+        fields: infoFields(
+          "Fermeture exceptionnelle",
+          "Les installations seront fermées ce mercredi en raison de travaux sur le complexe.",
+          "Mercredi 12 juin",
+        ),
       },
       {
         id: "vacances",
@@ -403,7 +541,11 @@
         defaultFormat: "story",
         defaultImage: imagePath + "captain-handshake.jpg",
         defaultIcon: "calendar",
-        fields: infoFields("Bonnes vacances", "Pause des entraînements du 22 décembre au 5 janvier. Reprise selon planning habituel.", "Du 22/12 au 05/01"),
+        fields: infoFields(
+          "Bonnes vacances",
+          "Pause des entraînements du 22 décembre au 5 janvier. Reprise selon planning habituel.",
+          "Du 22/12 au 05/01",
+        ),
       },
       {
         id: "album-photos",
@@ -418,7 +560,12 @@
           field("title", "Titre", "Album photos"),
           field("subtitle", "Sous-titre", "Le match en images"),
           field("date", "Date", "Dimanche 8 février"),
-          field("details", "Message", "Retrouvez la galerie complète sur nos réseaux.", "textarea"),
+          field(
+            "details",
+            "Message",
+            "Retrouvez la galerie complète sur nos réseaux.",
+            "textarea",
+          ),
           field("cta", "Mention", "@esdoubs"),
         ],
       },
@@ -435,7 +582,12 @@
           field("title", "Titre", "Retour en images"),
           field("subtitle", "Sous-titre", "Un week-end rouge et bleu"),
           field("date", "Date", "Saison 2026"),
-          field("details", "Message", "Les meilleurs moments à partager avec la communauté.", "textarea"),
+          field(
+            "details",
+            "Message",
+            "Les meilleurs moments à partager avec la communauté.",
+            "textarea",
+          ),
           field("cta", "Mention", "Swipe pour voir la suite"),
         ],
       },
@@ -452,7 +604,12 @@
           field("title", "Titre", "Interview"),
           field("name", "Nom", "Yamine"),
           field("role", "Rôle", "Joueur seniors"),
-          field("quote", "Citation", "On veut continuer à progresser ensemble et garder cet état d'esprit.", "textarea"),
+          field(
+            "quote",
+            "Citation",
+            "On veut continuer à progresser ensemble et garder cet état d'esprit.",
+            "textarea",
+          ),
           field("cta", "Mention", "À lire sur nos réseaux"),
         ],
       },
@@ -469,7 +626,12 @@
           field("title", "Titre", "Citation de la semaine"),
           field("name", "Auteur", "Le vestiaire"),
           field("role", "Contexte", "ES Doubs"),
-          field("quote", "Citation", "Le collectif reste notre meilleure force.", "textarea"),
+          field(
+            "quote",
+            "Citation",
+            "Le collectif reste notre meilleure force.",
+            "textarea",
+          ),
           field("cta", "Mention", "Allez l'ESD"),
         ],
       },
@@ -486,7 +648,12 @@
           field("title", "Titre", "Félicitations"),
           field("subtitle", "Personne / groupe", "À nos U15"),
           field("date", "Date", "Saison 2026"),
-          field("details", "Message", "Bravo pour cette qualification et l'investissement affiché toute la saison.", "textarea"),
+          field(
+            "details",
+            "Message",
+            "Bravo pour cette qualification et l'investissement affiché toute la saison.",
+            "textarea",
+          ),
           field("cta", "Mention", "Le club est fier de vous"),
         ],
       },
@@ -503,7 +670,12 @@
           field("title", "Titre", "Merci"),
           field("subtitle", "Groupe", "Aux bénévoles"),
           field("date", "Date", "Week-end tournoi"),
-          field("details", "Message", "Votre présence et votre énergie font vivre le club au quotidien.", "textarea"),
+          field(
+            "details",
+            "Message",
+            "Votre présence et votre énergie font vivre le club au quotidien.",
+            "textarea",
+          ),
           field("cta", "Mention", "ES Doubs vous remercie"),
         ],
       },
@@ -516,7 +688,11 @@
         defaultFormat: "facebook",
         defaultImage: imagePath + "squad-list-reference.jpg",
         defaultIcon: "calendar",
-        fields: infoFields("Assemblée générale", "Ordre du jour : bilan sportif, bilan financier, projets de la saison et questions diverses.", "Vendredi 26 juin - 19h00"),
+        fields: infoFields(
+          "Assemblée générale",
+          "Ordre du jour : bilan sportif, bilan financier, projets de la saison et questions diverses.",
+          "Vendredi 26 juin - 19h00",
+        ),
       },
       {
         id: "recrutement-joueurs",
@@ -530,7 +706,12 @@
         fields: [
           field("title", "Titre", "Recrutement joueurs"),
           field("subtitle", "Catégories", "U17, U18, Seniors"),
-          field("details", "Message", "Tu veux rejoindre un club ambitieux, familial et structuré ? Viens tenter l'aventure rouge et bleu.", "textarea"),
+          field(
+            "details",
+            "Message",
+            "Tu veux rejoindre un club ambitieux, familial et structuré ? Viens tenter l'aventure rouge et bleu.",
+            "textarea",
+          ),
           field("cta", "Contact", "Contact : contact@esdoubs.fr"),
         ],
       },
@@ -546,7 +727,12 @@
         fields: [
           field("title", "Titre", "Recrutement éducateurs"),
           field("subtitle", "École de foot"),
-          field("details", "Message", "L'ES Doubs recherche des éducateurs motivés pour accompagner ses jeunes licenciés.", "textarea"),
+          field(
+            "details",
+            "Message",
+            "L'ES Doubs recherche des éducateurs motivés pour accompagner ses jeunes licenciés.",
+            "textarea",
+          ),
           field("cta", "Contact", "Contact : contact@esdoubs.fr"),
         ],
       },
@@ -562,7 +748,12 @@
         fields: [
           field("title", "Titre", "Recrutement bénévoles"),
           field("subtitle", "Vie du club"),
-          field("details", "Message", "Accueil, buvette, événements, communication : chaque coup de main compte.", "textarea"),
+          field(
+            "details",
+            "Message",
+            "Accueil, buvette, événements, communication : chaque coup de main compte.",
+            "textarea",
+          ),
           field("cta", "Contact", "Rejoignez l'équipe ESD"),
         ],
       },
