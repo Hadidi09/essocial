@@ -541,7 +541,9 @@
     drawIconBadge(icon, 46 * u, 42 * u, 74 * u, b.white, b.red);
     drawLogo(logo, w - 150 * u, 34 * u, 112 * u);
 
-    drawFitText(text("title").toUpperCase(), 44 * u, 150 * u, w * 0.72, {
+    const titleX = 150 * u;
+    const titleWidth = w * 0.56;
+    drawFitText(text("title").toUpperCase(), titleX, 170 * u, titleWidth, {
       size: h > w ? 92 * u : 70 * u,
       min: 44 * u,
       maxHeight: 104 * u,
@@ -550,7 +552,7 @@
       stroke: b.red,
     });
 
-    drawPill(text("competition"), 46 * u, 178 * u, Math.min(360 * u, w * 0.45), 42 * u, b.red, b.white);
+    drawPill(text("competition"), titleX, 226 * u, Math.min(360 * u, w * 0.45), 42 * u, b.red, b.white);
 
     const panelY = h > w ? h - 330 * u : h - 300 * u;
     const teamSize = h > w ? 54 * u : 42 * u;
