@@ -4,7 +4,7 @@
   const data = window.ESD_APP_DATA;
   const STORAGE_KEY = "esd-studio-saved-designs";
   const BRAND_KEY = "esd-studio-brand";
-  const LOGO_SRC = "assets/images/esdlogo.png";
+  const LOGO_SRC = "assets/images/esd_logo.png";
   const ELLIPSIS = "\u2026";
 
   const canvas = document.getElementById("designCanvas");
