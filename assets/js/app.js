@@ -47,6 +47,7 @@
   };
 
   const imageCache = new Map();
+  const DRAFT_KEY = "esd-studio-drafts";
   let selectedCategory = data.categories[0].id;
   let searchTerm = "";
   let renderFrame = 0;
@@ -72,11 +73,42 @@
     applyBrandToUi();
     selectTemplate(state.templateId);
     renderSavedList();
+    saveDraftDebounced();
 
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(requestRender);
     }
   }
+
+  function debounce(fn, wait) {
+    let t = null;
+    return function (...args) {
+      clearTimeout(t);
+      t = setTimeout(() => fn.apply(this, args), wait);
+    };
+  }
+
+  function saveDraft() {
+    try {
+      const drafts = readJson(DRAFT_KEY, {});
+      drafts[state.templateId] = {
+        templateId: state.templateId,
+        formatId: state.formatId,
+        fields: { ...state.fields },
+        imageSrc: state.imageSrc,
+        partnerLogoSrc: state.partnerLogoSrc,
+        iconId: state.iconId,
+        brand: { ...state.brand },
+        updatedAt: Date.now(),
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(drafts));
+      setStatus("Brouillon sauvegardé");
+    } catch (error) {
+      console.warn(error);
+    }
+  }
+
+  const saveDraftDebounced = debounce(saveDraft, 700);
 
   function bindEvents() {
     els.templateSearch.addEventListener("input", (event) => {
@@ -261,6 +293,25 @@
       applyBrandToUi();
     }
 
+    // If no explicit restored state provided, attempt to load a local draft for this template
+    if (!restoredState) {
+      try {
+        const drafts = readJson(DRAFT_KEY, {});
+        const draft = drafts[template.id];
+        if (draft) {
+          state.fields = { ...Object.fromEntries(template.fields.map((item) => [item.key, item.value])), ...draft.fields };
+          state.imageSrc = draft.imageSrc || state.imageSrc;
+          state.partnerLogoSrc = draft.partnerLogoSrc || state.partnerLogoSrc;
+          state.formatId = draft.formatId || state.formatId;
+          state.iconId = draft.iconId || state.iconId;
+          state.brand = { ...state.brand, ...(draft.brand || {}) };
+          setStatus("Brouillon restauré");
+        }
+      } catch (error) {
+        console.warn(error);
+      }
+    }
+
     selectedCategory = template.category;
     els.formatSelect.value = state.formatId;
     els.currentTemplateName.textContent = template.name;
@@ -294,6 +345,7 @@
         const k = e.target.dataset.key || item.key;
         state.fields[k] = e.target.value;
         requestRender();
+        saveDraftDebounced();
       });
       label.appendChild(input);
       els.fieldEditor.appendChild(label);
@@ -366,6 +418,7 @@
       }
       requestRender();
       setStatus("Image chargée");
+      saveDraftDebounced();
     };
     reader.readAsDataURL(file);
   }
@@ -401,6 +454,7 @@
     }
     applyBrandToUi();
     requestRender();
+    saveDraftDebounced();
   }
 
   function resetCurrentTemplate() {
