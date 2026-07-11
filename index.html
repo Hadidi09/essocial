@@ -6,14 +6,17 @@
     <title>ES Doubs Studio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Open+Sans:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="assets/css/styles.css" />
   </head>
   <body>
     <div class="app-shell">
       <header class="topbar">
         <div class="brand-lockup">
-          <img src="assets/images/logo-esd.jpg" alt="Logo ES Doubs" />
+          <img src="assets/images/esdlogo.png" alt="Logo ES Doubs" />
           <div>
             <span class="eyebrow">ES Doubs 25300</span>
             <h1>Studio Communication</h1>
@@ -22,9 +25,19 @@
         <div class="topbar-actions">
           <label class="search-box" aria-label="Rechercher un modèle">
             <span aria-hidden="true">⌕</span>
-            <input id="templateSearch" type="search" placeholder="Rechercher un modèle" aria-label="Rechercher un modèle" />
+            <input
+              id="templateSearch"
+              type="search"
+              placeholder="Rechercher un modèle"
+              aria-label="Rechercher un modèle"
+            />
           </label>
-          <button class="icon-button" id="adminToggle" type="button" title="Mode admin">
+          <button
+            class="icon-button"
+            id="adminToggle"
+            type="button"
+            title="Mode admin"
+          >
             <span aria-hidden="true">⚙</span>
             <span class="sr-only">Mode admin</span>
           </button>
@@ -37,7 +50,12 @@
             <h2>Modèles</h2>
             <span id="templateCount">0</span>
           </div>
-          <nav class="category-tabs" id="categoryTabs" role="tablist" aria-label="Catégories"></nav>
+          <nav
+            class="category-tabs"
+            id="categoryTabs"
+            role="tablist"
+            aria-label="Catégories"
+          ></nav>
           <div class="template-grid" id="templateGrid"></div>
         </aside>
 
@@ -53,7 +71,12 @@
             </label>
           </div>
           <div class="canvas-stage">
-            <canvas id="designCanvas" width="1080" height="1080" aria-label="Aperçu exportable"></canvas>
+            <canvas
+              id="designCanvas"
+              width="1080"
+              height="1080"
+              aria-label="Aperçu exportable"
+            ></canvas>
           </div>
           <div class="preview-meta">
             <span id="formatMeta">1080 × 1080 px</span>
@@ -66,7 +89,14 @@
             <section class="editor-section">
               <div class="section-heading">
                 <h2>Contenu</h2>
-                <button class="secondary-button compact-button" id="resetTemplate" type="button" title="Recharger les textes, image et icône du modèle">Réinitialiser</button>
+                <button
+                  class="secondary-button compact-button"
+                  id="resetTemplate"
+                  type="button"
+                  title="Recharger les textes, image et icône du modèle"
+                >
+                  Réinitialiser
+                </button>
               </div>
               <div id="fieldEditor" class="field-stack"></div>
             </section>
@@ -94,7 +124,11 @@
               <div class="icon-bank" id="iconBank"></div>
             </section>
 
-            <section class="editor-section admin-section" id="adminPanel" hidden>
+            <section
+              class="editor-section admin-section"
+              id="adminPanel"
+              hidden
+            >
               <div class="section-heading">
                 <h2>Identité</h2>
                 <span>Admin</span>
@@ -105,9 +139,15 @@
                 <label>Or <input id="brandGold" type="color" /></label>
                 <label>Noir <input id="brandDark" type="color" /></label>
               </div>
-              <label class="input-row">Police titres <input id="brandTitleFont" type="text" /></label>
-              <label class="input-row">Police texte <input id="brandBodyFont" type="text" /></label>
-              <button class="secondary-button" id="resetBrand" type="button">Réinitialiser</button>
+              <label class="input-row"
+                >Police titres <input id="brandTitleFont" type="text"
+              /></label>
+              <label class="input-row"
+                >Police texte <input id="brandBodyFont" type="text"
+              /></label>
+              <button class="secondary-button" id="resetBrand" type="button">
+                Réinitialiser
+              </button>
             </section>
 
             <section class="editor-section">
@@ -115,8 +155,12 @@
                 <h2>Sauvegarde</h2>
               </div>
               <div class="action-row">
-                <button class="secondary-button" id="saveDesign" type="button">Enregistrer</button>
-                <button class="secondary-button" id="clearSaved" type="button">Vider</button>
+                <button class="secondary-button" id="saveDesign" type="button">
+                  Enregistrer
+                </button>
+                <button class="secondary-button" id="clearSaved" type="button">
+                  Vider
+                </button>
               </div>
               <div class="saved-list" id="savedList"></div>
             </section>
@@ -126,9 +170,15 @@
                 <h2>Export</h2>
               </div>
               <div class="action-row three">
-                <button class="primary-button" id="exportPng" type="button">PNG</button>
-                <button class="primary-button" id="exportJpg" type="button">JPG</button>
-                <button class="primary-button" id="exportPdf" type="button">PDF</button>
+                <button class="primary-button" id="exportPng" type="button">
+                  PNG
+                </button>
+                <button class="primary-button" id="exportJpg" type="button">
+                  JPG
+                </button>
+                <button class="primary-button" id="exportPdf" type="button">
+                  PDF
+                </button>
               </div>
             </section>
           </div>
