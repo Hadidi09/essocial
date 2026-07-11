@@ -24,6 +24,8 @@
     dropZone: document.getElementById("dropZone"),
     imageUpload: document.getElementById("imageUpload"),
     partnerUpload: document.getElementById("partnerUpload"),
+    partnerSize: document.getElementById("partnerSize"),
+    partnerPosition: document.getElementById("partnerPosition"),
     mediaBank: document.getElementById("mediaBank"),
     iconBank: document.getElementById("iconBank"),
     adminToggle: document.getElementById("adminToggle"),
@@ -56,6 +58,8 @@
     fields: {},
     imageSrc: data.templates[0].defaultImage,
     partnerLogoSrc: "",
+    partnerLogoSize: 120,
+    partnerLogoPosition: "bottom-left",
     iconId: data.templates[0].defaultIcon,
     brand: { ...data.brandDefaults, ...(savedBrand || {}) },
   };
@@ -90,6 +94,22 @@
     els.partnerUpload.addEventListener("change", (event) => {
       handleUpload(event.target.files[0], "partner");
     });
+
+    if (els.partnerSize) {
+      els.partnerSize.addEventListener("input", (e) => {
+        state.partnerLogoSize = Number(e.target.value) || 120;
+        requestRender();
+      });
+      els.partnerSize.value = state.partnerLogoSize;
+    }
+
+    if (els.partnerPosition) {
+      els.partnerPosition.addEventListener("change", (e) => {
+        state.partnerLogoPosition = e.target.value || "bottom-left";
+        requestRender();
+      });
+      els.partnerPosition.value = state.partnerLogoPosition;
+    }
 
     ["dragenter", "dragover"].forEach((type) => {
       els.dropZone.addEventListener(type, (event) => {
@@ -1394,9 +1414,28 @@
 
   function drawPartnerBadge(partnerLogo, w, h, u) {
     if (!partnerLogo) return;
-    const size = Math.min(120 * u, w * 0.14, h * 0.14);
-    const x = 28 * u;
-    const y = h - size - 28 * u;
+    const base = (state.partnerLogoSize || 120) * u;
+    const size = Math.min(base, w * 0.3, h * 0.3);
+    const padding = 28 * u;
+    let x = padding;
+    let y = h - size - padding;
+    switch (state.partnerLogoPosition) {
+      case "bottom-right":
+        x = w - size - padding;
+        y = h - size - padding;
+        break;
+      case "top-left":
+        x = padding;
+        y = padding;
+        break;
+      case "top-right":
+        x = w - size - padding;
+        y = padding;
+        break;
+      default:
+        x = padding;
+        y = h - size - padding;
+    }
     ctx.save();
     ctx.fillStyle = "rgba(255,255,255,0.92)";
     roundRect(x, y, size, size, 14 * u);

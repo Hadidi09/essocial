@@ -115,6 +115,19 @@
                 Logo partenaire
                 <input id="partnerUpload" type="file" accept="image/*" />
               </label>
+              <label class="file-row">
+                Taille logo partenaire
+                <input id="partnerSize" type="range" min="60" max="300" value="120" />
+              </label>
+              <label class="file-row">
+                Position logo
+                <select id="partnerPosition">
+                  <option value="bottom-left">Bas gauche</option>
+                  <option value="bottom-right">Bas droite</option>
+                  <option value="top-left">Haut gauche</option>
+                  <option value="top-right">Haut droite</option>
+                </select>
+              </label>
             </section>
 
             <section class="editor-section">
