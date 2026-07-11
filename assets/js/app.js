@@ -26,6 +26,7 @@
     partnerUpload: document.getElementById("partnerUpload"),
     partnerSize: document.getElementById("partnerSize"),
     partnerPosition: document.getElementById("partnerPosition"),
+    partnerStyle: document.getElementById("partnerStyle"),
     mediaBank: document.getElementById("mediaBank"),
     iconBank: document.getElementById("iconBank"),
     adminToggle: document.getElementById("adminToggle"),
@@ -60,6 +61,7 @@
     partnerLogoSrc: "",
     partnerLogoSize: 120,
     partnerLogoPosition: "bottom-left",
+    partnerLogoStyle: "badge",
     iconId: data.templates[0].defaultIcon,
     brand: { ...data.brandDefaults, ...(savedBrand || {}) },
   };
@@ -109,6 +111,14 @@
         requestRender();
       });
       els.partnerPosition.value = state.partnerLogoPosition;
+    }
+
+    if (els.partnerStyle) {
+      els.partnerStyle.addEventListener("change", (e) => {
+        state.partnerLogoStyle = e.target.value || "badge";
+        requestRender();
+      });
+      els.partnerStyle.value = state.partnerLogoStyle;
     }
 
     ["dragenter", "dragover"].forEach((type) => {
@@ -270,6 +280,8 @@
       const label = document.createElement("label");
       label.textContent = item.label;
       const input = document.createElement(item.type === "textarea" ? "textarea" : "input");
+      input.id = `field-${item.key}`;
+      input.dataset.key = item.key;
       const limits = fieldUiLimits(item);
       input.value = state.fields[item.key] || "";
       input.placeholder = item.value || "";
@@ -278,8 +290,9 @@
         input.rows = limits.rows;
         input.style.minHeight = `${limits.rows * 28}px`;
       }
-      input.addEventListener("input", () => {
-        state.fields[item.key] = input.value;
+      input.addEventListener("input", (e) => {
+        const k = e.target.dataset.key || item.key;
+        state.fields[k] = e.target.value;
         requestRender();
       });
       label.appendChild(input);
@@ -1437,10 +1450,15 @@
         y = h - size - padding;
     }
     ctx.save();
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    roundRect(x, y, size, size, 14 * u);
-    ctx.fill();
-    drawContain(partnerLogo, x + 12 * u, y + 12 * u, size - 24 * u, size - 24 * u);
+    if (state.partnerLogoStyle === "overlay") {
+      // draw directly on the image without background
+      drawContain(partnerLogo, x, y, size, size);
+    } else {
+      ctx.fillStyle = "rgba(255,255,255,0.92)";
+      roundRect(x, y, size, size, 14 * u);
+      ctx.fill();
+      drawContain(partnerLogo, x + 12 * u, y + 12 * u, size - 24 * u, size - 24 * u);
+    }
     ctx.restore();
   }
 
