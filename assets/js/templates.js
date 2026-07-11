@@ -127,6 +127,17 @@
         fields: matchFields("ES Doubs", "Besançon Football", "NEXT GAME"),
       },
       {
+        id: "affiche-match-vs",
+        category: "matchs",
+        name: "Affiche duel VS",
+        description: "Match face à face avec logos domicile et extérieur.",
+        layout: "match-vs",
+        defaultFormat: "instagram-square",
+        defaultImage: imagePath + "match-collage.jpg",
+        defaultIcon: "ball",
+        fields: matchFields("ES Doubs", "Besançon Football", "PROCHAIN MATCH"),
+      },
+      {
         id: "affiche-exterieur",
         category: "matchs",
         name: "Match extérieur",

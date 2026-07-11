@@ -23,6 +23,8 @@
     fieldEditor: document.getElementById("fieldEditor"),
     dropZone: document.getElementById("dropZone"),
     imageUpload: document.getElementById("imageUpload"),
+    homeLogoUpload: document.getElementById("homeLogoUpload"),
+    awayLogoUpload: document.getElementById("awayLogoUpload"),
     partnerUpload: document.getElementById("partnerUpload"),
     partnerSize: document.getElementById("partnerSize"),
     partnerPosition: document.getElementById("partnerPosition"),
@@ -59,6 +61,8 @@
     formatId: data.templates[0].defaultFormat,
     fields: {},
     imageSrc: data.templates[0].defaultImage,
+    homeLogoSrc: "",
+    awayLogoSrc: "",
     partnerLogoSrc: "",
     partnerLogoSize: 120,
     partnerLogoPosition: "bottom-left",
@@ -96,6 +100,8 @@
         formatId: state.formatId,
         fields: { ...state.fields },
         imageSrc: state.imageSrc,
+        homeLogoSrc: state.homeLogoSrc,
+        awayLogoSrc: state.awayLogoSrc,
         partnerLogoSrc: state.partnerLogoSrc,
         iconId: state.iconId,
         brand: { ...state.brand },
@@ -123,6 +129,14 @@
 
     els.imageUpload.addEventListener("change", (event) => {
       handleUpload(event.target.files[0], "main");
+    });
+
+    els.homeLogoUpload.addEventListener("change", (event) => {
+      handleUpload(event.target.files[0], "homeLogo");
+    });
+
+    els.awayLogoUpload.addEventListener("change", (event) => {
+      handleUpload(event.target.files[0], "awayLogo");
     });
 
     els.partnerUpload.addEventListener("change", (event) => {
@@ -287,6 +301,8 @@
     state.formatId = restoredState?.formatId || template.defaultFormat || data.formats[0].id;
     state.fields = restoredState?.fields || Object.fromEntries(template.fields.map((item) => [item.key, item.value]));
     state.imageSrc = restoredState?.imageSrc || template.defaultImage || data.media[0].src;
+    state.homeLogoSrc = restoredState?.homeLogoSrc || "";
+    state.awayLogoSrc = restoredState?.awayLogoSrc || "";
     state.partnerLogoSrc = restoredState?.partnerLogoSrc || "";
     state.iconId = restoredState?.iconId || template.defaultIcon || data.icons[0].id;
     if (restoredState?.brand) {
@@ -302,6 +318,8 @@
         if (draft) {
           state.fields = { ...Object.fromEntries(template.fields.map((item) => [item.key, item.value])), ...draft.fields };
           state.imageSrc = draft.imageSrc || state.imageSrc;
+          state.homeLogoSrc = draft.homeLogoSrc || state.homeLogoSrc;
+          state.awayLogoSrc = draft.awayLogoSrc || state.awayLogoSrc;
           state.partnerLogoSrc = draft.partnerLogoSrc || state.partnerLogoSrc;
           state.formatId = draft.formatId || state.formatId;
           state.iconId = draft.iconId || state.iconId;
@@ -413,6 +431,10 @@
     reader.onload = () => {
       if (target === "partner") {
         state.partnerLogoSrc = reader.result;
+      } else if (target === "homeLogo") {
+        state.homeLogoSrc = reader.result;
+      } else if (target === "awayLogo") {
+        state.awayLogoSrc = reader.result;
       } else {
         state.imageSrc = reader.result;
         renderMediaBank();
@@ -474,6 +496,8 @@
       formatId: state.formatId,
       fields: { ...state.fields },
       imageSrc: state.imageSrc,
+      homeLogoSrc: state.homeLogoSrc,
+      awayLogoSrc: state.awayLogoSrc,
       partnerLogoSrc: state.partnerLogoSrc,
       iconId: state.iconId,
       brand: { ...state.brand },
@@ -551,10 +575,12 @@
     els.formatMeta.textContent = `${format.width} × ${format.height} px`;
     setStatus("Rendu...");
 
-    const [photo, logo, iconImage, partnerLogo, ...gallery] = await Promise.all([
+    const [photo, logo, iconImage, homeLogo, awayLogo, partnerLogo, ...gallery] = await Promise.all([
       loadImage(state.imageSrc),
       loadImage(LOGO_SRC),
       loadImage(icon.src),
+      state.homeLogoSrc ? loadImage(state.homeLogoSrc) : Promise.resolve(null),
+      state.awayLogoSrc ? loadImage(state.awayLogoSrc) : Promise.resolve(null),
       state.partnerLogoSrc ? loadImage(state.partnerLogoSrc) : Promise.resolve(null),
       ...gallerySources.map(loadImage),
     ]);
@@ -567,6 +593,8 @@
       photo,
       logo,
       icon: iconImage,
+      homeLogo,
+      awayLogo,
       partnerLogo,
       gallery: gallery.filter(Boolean),
     });
@@ -582,6 +610,7 @@
 
     const renderers = {
       match: renderMatch,
+      "match-vs": renderMatchVs,
       result: renderResult,
       list: renderList,
       table: renderTable,
@@ -693,6 +722,135 @@
       maxHeight: locationSize * 2.4,
     });
     drawFooterBrand(w, h, logo);
+  }
+
+  function renderMatchVs({ format, photo, logo, icon, homeLogo, awayLogo }) {
+    const { width: w, height: h } = format;
+    const b = state.brand;
+    const u = unit(w, h);
+
+    drawCover(photo, 0, 0, w, h, b.dark);
+    drawOverlay(0, 0, w, h, "rgba(0,0,0,0.32)");
+    drawBottomFade(w, h, 0.6);
+
+    drawIconBadge(icon, 46 * u, 42 * u, 74 * u, b.white, b.red);
+    drawLogo(logo, w - 150 * u, 34 * u, 112 * u);
+
+    const titleX = 80 * u;
+    const titleWidth = w - 160 * u;
+    drawFitText(text("title").toUpperCase(), titleX, 160 * u, titleWidth, {
+      size: h > w ? 84 * u : 68 * u,
+      min: 38 * u,
+      maxHeight: 110 * u,
+      color: b.white,
+      weight: 900,
+      stroke: b.red,
+    });
+    drawPill(text("competition"), titleX, 230 * u, Math.min(420 * u, titleWidth), 44 * u, b.red, b.white);
+
+    const contentY = 310 * u;
+    const panelPadding = 32 * u;
+    const cardWidth = (w - panelPadding * 3) / 2;
+    const cardHeight = Math.min(h - contentY - 180 * u, 520 * u);
+    const leftCardX = panelPadding;
+    const rightCardX = w - cardWidth - panelPadding;
+    const cardY = contentY;
+    const badgeSize = Math.min(160 * u, cardWidth * 0.6);
+
+    ctx.save();
+    ctx.fillStyle = "rgba(255,255,255,0.08)";
+    roundRect(leftCardX, cardY, cardWidth, cardHeight, 28 * u);
+    ctx.fill();
+    roundRect(rightCardX, cardY, cardWidth, cardHeight, 28 * u);
+    ctx.fill();
+    ctx.restore();
+
+    const logoX = leftCardX + (cardWidth - badgeSize) / 2;
+    const logoY = cardY + 42 * u;
+    if (homeLogo) {
+      drawContain(homeLogo, logoX, logoY, badgeSize, badgeSize);
+    } else {
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      roundRect(logoX, logoY, badgeSize, badgeSize, 22 * u);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    drawWrappedText(text("homeTeam").toUpperCase(), leftCardX + 24 * u, logoY + badgeSize + 54 * u, cardWidth - 48 * u, {
+      size: 42 * u,
+      min: 26 * u,
+      color: b.white,
+      weight: 900,
+      align: "center",
+      lineHeight: 46 * u,
+      maxLines: 2,
+    });
+    drawWrappedText(`${text("date")} · ${text("time")}`, leftCardX + 24 * u, logoY + badgeSize + 120 * u, cardWidth - 48 * u, {
+      size: 26 * u,
+      min: 18 * u,
+      color: b.gold,
+      weight: 800,
+      align: "center",
+      maxLines: 1,
+    });
+    drawWrappedText(text("location"), leftCardX + 24 * u, logoY + badgeSize + 158 * u, cardWidth - 48 * u, {
+      size: 22 * u,
+      min: 16 * u,
+      color: b.white,
+      family: b.bodyFont,
+      weight: 700,
+      align: "center",
+      maxLines: 2,
+    });
+
+    const awayLogoX = rightCardX + (cardWidth - badgeSize) / 2;
+    if (awayLogo) {
+      drawContain(awayLogo, awayLogoX, logoY, badgeSize, badgeSize);
+    } else {
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      roundRect(awayLogoX, logoY, badgeSize, badgeSize, 22 * u);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    drawWrappedText(text("awayTeam").toUpperCase(), rightCardX + 24 * u, logoY + badgeSize + 54 * u, cardWidth - 48 * u, {
+      size: 42 * u,
+      min: 26 * u,
+      color: b.white,
+      weight: 900,
+      align: "center",
+      lineHeight: 46 * u,
+      maxLines: 2,
+    });
+    drawWrappedText(`${text("date")} · ${text("time")}`, rightCardX + 24 * u, logoY + badgeSize + 120 * u, cardWidth - 48 * u, {
+      size: 26 * u,
+      min: 18 * u,
+      color: b.gold,
+      weight: 800,
+      align: "center",
+      maxLines: 1,
+    });
+    drawWrappedText(text("location"), rightCardX + 24 * u, logoY + badgeSize + 158 * u, cardWidth - 48 * u, {
+      size: 22 * u,
+      min: 16 * u,
+      color: b.white,
+      family: b.bodyFont,
+      weight: 700,
+      align: "center",
+      maxLines: 2,
+    });
+
+    drawFitText("VS", w * 0.5, cardY + cardHeight * 0.45, 160 * u, {
+      size: 120 * u,
+      min: 64 * u,
+      color: b.gold,
+      weight: 900,
+      align: "center",
+    });
+
+    drawFooterText(text("footer"), w, h, b);
   }
 
   function renderResult({ format, photo, logo, icon }) {
