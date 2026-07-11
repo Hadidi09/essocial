@@ -272,6 +272,7 @@
       const button = document.createElement("button");
       button.type = "button";
       button.className = `template-card${isActive ? " active" : ""}`;
+      button.dataset.templateId = template.id;
       button.setAttribute("aria-pressed", String(isActive));
       button.setAttribute("aria-label", `${template.name}, ${template.description}`);
       button.innerHTML = `<strong>${escapeHtml(template.name)}</strong><span>${escapeHtml(template.description)}</span>`;
@@ -603,6 +604,10 @@
     }
   }
 
+  function ensureTextBelowIcon(requestedY, iconY, iconSize, gap = 30) {
+    return Math.max(requestedY, iconY + iconSize + gap);
+  }
+
   function renderMatch({ format, photo, logo, icon }) {
     const { width: w, height: h } = format;
     const b = state.brand;
@@ -749,7 +754,8 @@
     drawLogo(logo, w - 138 * u, 34 * u, 100 * u);
     drawIconBadge(icon, 52 * u, 44 * u, 70 * u, b.white, b.red);
 
-    drawFitText(text("title").toUpperCase(), 52 * u, 142 * u, w * 0.64, {
+    const titleY = ensureTextBelowIcon(142 * u, 52 * u, 70 * u, 30 * u);
+    drawFitText(text("title").toUpperCase(), 52 * u, titleY, w * 0.64, {
       size: 70 * u,
       min: 36 * u,
       maxHeight: 82 * u,
@@ -795,7 +801,8 @@
     drawLogo(logo, w - 138 * u, 38 * u, 100 * u);
     drawIconBadge(icon, 52 * u, 50 * u, 70 * u, b.white, b.gold);
 
-    drawFitText(text("title").toUpperCase(), 52 * u, 154 * u, w * 0.72, {
+    const titleY = ensureTextBelowIcon(154 * u, 52 * u, 70 * u, 30 * u);
+    drawFitText(text("title").toUpperCase(), 52 * u, titleY, w * 0.72, {
       size: 80 * u,
       min: 44 * u,
       maxHeight: 94 * u,
@@ -844,7 +851,8 @@
     drawLogo(logo, w - 165 * u, h - 230 * u, 120 * u);
     drawIconBadge(icon, 96 * u, h - 220 * u, 74 * u, b.white, b.red);
 
-    drawFitText(text("title").toUpperCase(), w * 0.53, 165 * u, w * 0.42, {
+    const titleY = ensureTextBelowIcon(165 * u, 96 * u, 74 * u, 30 * u);
+    drawFitText(text("title").toUpperCase(), w * 0.53, titleY, w * 0.42, {
       size: 86 * u,
       min: 44 * u,
       maxHeight: 104 * u,
@@ -908,7 +916,8 @@
     drawLogo(logo, w - 145 * u, 34 * u, 108 * u);
     drawIconBadge(icon, 52 * u, 50 * u, 78 * u, b.white, b.red);
 
-    drawWrappedText(text("subtitle").toUpperCase(), 54 * u, 170 * u, w * 0.54, {
+    const subtitleY = ensureTextBelowIcon(170 * u, 52 * u, 78 * u, 30 * u);
+    drawWrappedText(text("subtitle").toUpperCase(), 54 * u, subtitleY, w * 0.54, {
       size: 26 * u,
       color: b.gold,
       weight: 900,
@@ -951,7 +960,8 @@
     drawLogo(logo, w - 142 * u, 36 * u, 104 * u);
     drawIconBadge(icon, 50 * u, 48 * u, 76 * u, b.white, b.gold);
 
-    drawFitText(text("title").toUpperCase(), 52 * u, 160 * u, w * 0.62, {
+    const titleY = ensureTextBelowIcon(160 * u, 50 * u, 76 * u, 30 * u);
+    drawFitText(text("title").toUpperCase(), 52 * u, titleY, w * 0.62, {
       size: 58 * u,
       min: 34 * u,
       maxHeight: 72 * u,
@@ -1008,7 +1018,8 @@
     drawLogo(logo, w - 148 * u, 38 * u, 108 * u);
     drawIconBadge(icon, 52 * u, 52 * u, 76 * u, b.white, b.blue);
 
-    drawFitText(text("title").toUpperCase(), 56 * u, 175 * u, w * 0.68, {
+    const titleY = ensureTextBelowIcon(175 * u, 52 * u, 76 * u, 30 * u);
+    drawFitText(text("title").toUpperCase(), 56 * u, titleY, w * 0.68, {
       size: 88 * u,
       min: 42 * u,
       color: b.white,
@@ -1052,7 +1063,8 @@
     drawLogo(logo, w - 145 * u, 36 * u, 108 * u);
     drawIconBadge(icon, 54 * u, 52 * u, 76 * u, b.white, b.gold);
 
-    drawFitText(text("title").toUpperCase(), w * 0.43, 155 * u, w * 0.45, {
+    const titleY = ensureTextBelowIcon(155 * u, 54 * u, 76 * u, 30 * u);
+    drawFitText(text("title").toUpperCase(), w * 0.43, titleY, w * 0.45, {
       size: 62 * u,
       min: 34 * u,
       color: b.red,
@@ -1115,7 +1127,8 @@
     drawLogo(logo, w - 145 * u, 42 * u, 108 * u);
     drawIconBadge(icon, 58 * u, 72 * u, 100 * u, b.white, b.red);
 
-    drawWrappedText(text("subtitle").toUpperCase(), 58 * u, 220 * u, w * 0.62, {
+    const subtitleY = ensureTextBelowIcon(220 * u, 58 * u, 100 * u, 30 * u);
+    drawWrappedText(text("subtitle").toUpperCase(), 58 * u, subtitleY, w * 0.62, {
       size: 28 * u,
       color: b.red,
       weight: 900,
@@ -1169,7 +1182,8 @@
     drawLogo(logo, w - 136 * u, 25 * u, 94 * u);
     drawIconBadge(icon, 46 * u, 27 * u, 70 * u, b.white, b.red);
 
-    drawFitText(text("title").toUpperCase(), 134 * u, 77 * u, w - 292 * u, {
+    const titleY = ensureTextBelowIcon(77 * u, 46 * u, 70 * u, 30 * u);
+    drawFitText(text("title").toUpperCase(), 134 * u, titleY, w - 292 * u, {
       size: 54 * u,
       min: 28 * u,
       color: b.white,
@@ -1214,7 +1228,8 @@
     drawLogo(logo, w - 140 * u, 24 * u, 96 * u);
     drawIconBadge(icon, 48 * u, 28 * u, 70 * u, b.white, b.blue);
 
-    drawFitText(text("title").toUpperCase(), 132 * u, 83 * u, w - 285 * u, {
+    const titleY = ensureTextBelowIcon(83 * u, 48 * u, 70 * u, 30 * u);
+    drawFitText(text("title").toUpperCase(), 132 * u, titleY, w - 285 * u, {
       size: 54 * u,
       min: 30 * u,
       color: b.white,
@@ -1264,7 +1279,8 @@
     drawLogo(logo, w - 146 * u, 38 * u, 108 * u);
     drawIconBadge(icon, 56 * u, 55 * u, 82 * u, b.white, b.red);
 
-    drawWrappedText(text("subtitle").toUpperCase(), 56 * u, 185 * u, w * 0.72, {
+    const subtitleY = ensureTextBelowIcon(185 * u, 56 * u, 82 * u, 30 * u);
+    drawWrappedText(text("subtitle").toUpperCase(), 56 * u, subtitleY, w * 0.72, {
       size: 34 * u,
       color: b.gold,
       weight: 900,
@@ -1302,7 +1318,8 @@
     drawLogo(logo, w - 142 * u, 24 * u, 98 * u);
     drawIconBadge(icon, 46 * u, 28 * u, 74 * u, b.white, b.gold);
 
-    drawFitText(text("title").toUpperCase(), 132 * u, 84 * u, w - 290 * u, {
+    const titleY = ensureTextBelowIcon(84 * u, 46 * u, 74 * u, 30 * u);
+    drawFitText(text("title").toUpperCase(), 132 * u, titleY, w - 290 * u, {
       size: 54 * u,
       min: 28 * u,
       color: b.white,
