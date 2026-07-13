@@ -318,6 +318,22 @@
         ),
       },
       {
+        id: "soiree-conviviale",
+        category: "evenements",
+        name: "Soirée conviviale",
+        description: "Moules-frites, fondue, tartiflette... les soirées organisées par le club.",
+        layout: "event",
+        defaultFormat: "instagram-square",
+        defaultImage: imagePath + "captain-handshake.jpg",
+        defaultIcon: "megaphone",
+        fields: eventFields(
+          "Soirée Moules-Frites",
+          "Repas convivial organisé par le club",
+          "Samedi 22 novembre - 19h30",
+          "Salle des fêtes - ES Doubs",
+        ),
+      },
+      {
         id: "anniversaire-club",
         category: "evenements",
         name: "Anniversaire du club",
