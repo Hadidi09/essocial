@@ -730,7 +730,7 @@
     const u = unit(w, h);
 
     drawCover(photo, 0, 0, w, h, b.dark);
-    drawOverlay(0, 0, w, h, "rgba(0,0,0,0.28)");
+    drawOverlay(0, 0, w, h, "rgba(0,0,0,0.3)");
     drawBottomFade(w, h, 0.65);
 
     drawIconBadge(icon, 46 * u, 42 * u, 74 * u, b.white, b.red);
@@ -749,78 +749,76 @@
     drawPill(text("competition"), titleX, 230 * u, Math.min(420 * u, titleWidth), 44 * u, b.red, b.white);
 
     const portrait = h > w;
-    const contentStartY = portrait ? 320 * u : 310 * u;
-    const badgeSize = portrait ? 180 * u : 140 * u;
-    const gapBetweenTeams = w * 0.04;
-    const leftLogoX = (w - badgeSize * 2 - gapBetweenTeams) / 2;
-    const rightLogoX = leftLogoX + badgeSize + gapBetweenTeams;
-    const logoY = contentStartY;
+    const logosStartY = portrait ? 300 * u : 280 * u;
+    const logoSize = portrait ? 200 * u : 160 * u;
+    const gap = portrait ? 80 * u : 60 * u;
+    const totalLogoWidth = logoSize * 2 + gap;
+    const leftLogoX = (w - totalLogoWidth) / 2;
+    const rightLogoX = leftLogoX + logoSize + gap;
 
     if (homeLogo) {
-      drawContain(homeLogo, leftLogoX, logoY, badgeSize, badgeSize);
+      drawContain(homeLogo, leftLogoX, logosStartY, logoSize, logoSize);
     } else {
       ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,0.12)";
-      roundRect(leftLogoX, logoY, badgeSize, badgeSize, 20 * u);
+      ctx.fillStyle = "rgba(255,255,255,0.15)";
+      roundRect(leftLogoX, logosStartY, logoSize, logoSize, 24 * u);
       ctx.fill();
       ctx.restore();
     }
 
     if (awayLogo) {
-      drawContain(awayLogo, rightLogoX, logoY, badgeSize, badgeSize);
+      drawContain(awayLogo, rightLogoX, logosStartY, logoSize, logoSize);
     } else {
       ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,0.12)";
-      roundRect(rightLogoX, logoY, badgeSize, badgeSize, 20 * u);
+      ctx.fillStyle = "rgba(255,255,255,0.15)";
+      roundRect(rightLogoX, logosStartY, logoSize, logoSize, 24 * u);
       ctx.fill();
       ctx.restore();
     }
 
-    const vsX = w * 0.5;
-    const vsY = logoY + badgeSize * 0.5;
-    drawFitText("VS", vsX, vsY, 180 * u, {
-      size: portrait ? 160 * u : 120 * u,
-      min: 72 * u,
+    const vsY = logosStartY + logoSize * 0.45;
+    drawFitText("VS", w * 0.5, vsY, 240 * u, {
+      size: portrait ? 200 * u : 160 * u,
+      min: 90 * u,
       color: b.gold,
       weight: 900,
       align: "center",
     });
 
-    const teamStartY = logoY + badgeSize + (portrait ? 54 * u : 42 * u);
-    const homeTeamX = leftLogoX + badgeSize / 2;
-    const awayTeamX = rightLogoX + badgeSize / 2;
-    const teamSize = portrait ? 52 * u : 40 * u;
+    const teamY = logosStartY + logoSize + (portrait ? 50 * u : 40 * u);
+    const teamSize = portrait ? 56 * u : 44 * u;
+    const teamWidth = logoSize * 0.85;
 
-    drawWrappedText(text("homeTeam").toUpperCase(), homeTeamX - badgeSize * 0.4, teamStartY, badgeSize * 0.8, {
+    drawWrappedText(text("homeTeam").toUpperCase(), leftLogoX + logoSize / 2 - teamWidth / 2, teamY, teamWidth, {
       size: teamSize,
-      min: 24 * u,
+      min: 26 * u,
       color: b.white,
       weight: 900,
       align: "center",
-      lineHeight: teamSize * 1.08,
+      lineHeight: teamSize * 1.1,
       maxLines: 2,
     });
 
-    drawWrappedText(text("awayTeam").toUpperCase(), awayTeamX - badgeSize * 0.4, teamStartY, badgeSize * 0.8, {
+    drawWrappedText(text("awayTeam").toUpperCase(), rightLogoX + logoSize / 2 - teamWidth / 2, teamY, teamWidth, {
       size: teamSize,
-      min: 24 * u,
+      min: 26 * u,
       color: b.white,
       weight: 900,
       align: "center",
-      lineHeight: teamSize * 1.08,
+      lineHeight: teamSize * 1.1,
       maxLines: 2,
     });
 
-    const footerY = h - (portrait ? 160 * u : 140 * u);
-    const dateTimeSize = portrait ? 32 * u : 28 * u;
-    const locationSize = portrait ? 26 * u : 24 * u;
-
+    const footerStartY = h - (portrait ? 180 * u : 160 * u);
     ctx.save();
-    ctx.fillStyle = "rgba(17,24,39,0.7)";
-    ctx.fillRect(0, footerY - 20 * u, w, h - (footerY - 20 * u));
+    ctx.fillStyle = "rgba(17,24,39,0.72)";
+    ctx.fillRect(0, footerStartY - 30 * u, w, h - (footerStartY - 30 * u));
     ctx.restore();
 
-    drawWrappedText(`${text("date")} · ${text("time")}`, 50 * u, footerY, w - 100 * u, {
+    const dateTimeSize = portrait ? 34 * u : 30 * u;
+    const locationSize = portrait ? 28 * u : 26 * u;
+
+    drawWrappedText(`${text("date")} · ${text("time")}`, 60 * u, footerStartY + 12 * u, w - 120 * u, {
       size: dateTimeSize,
       min: dateTimeSize * 0.7,
       color: b.gold,
@@ -829,7 +827,7 @@
       maxLines: 1,
     });
 
-    drawWrappedText(text("location"), 50 * u, footerY + (portrait ? 58 * u : 48 * u), w - 100 * u, {
+    drawWrappedText(text("location"), 60 * u, footerStartY + dateTimeSize + 32 * u, w - 120 * u, {
       size: locationSize,
       min: locationSize * 0.7,
       color: b.white,
