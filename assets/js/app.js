@@ -616,6 +616,7 @@
       table: renderTable,
       roster: renderRoster,
       event: renderEvent,
+      "convivial-event": renderConvialEvent,
       portrait: renderPortrait,
       transfer: renderTransfer,
       sponsor: renderSponsor,
@@ -680,48 +681,60 @@
 
     const portrait = h > w;
     const panelY = portrait ? h - 520 * u : h - 420 * u;
-    const teamSize = portrait ? 54 * u : 42 * u;
-    const vsSize = portrait ? 40 * u : 34 * u;
-    const timeSize = portrait ? 34 * u : 30 * u;
-    const locationSize = portrait ? 24 * u : 22 * u;
+    const teamSize = portrait ? 58 * u : 46 * u;
+    const vsSize = portrait ? 82 * u : 66 * u;
     const teamLine = panelY + (portrait ? 72 * u : 80 * u);
-    const vsLine = panelY + (portrait ? 142 * u : 150 * u);
-    const timeLine = panelY + (portrait ? 212 * u : 220 * u);
-    const locationLine = panelY + (portrait ? 266 * u : 276 * u);
+    const vsLine = panelY + (portrait ? 150 * u : 158 * u);
+    const awayLine = panelY + (portrait ? 226 * u : 234 * u);
 
     drawWrappedText(text("homeTeam").toUpperCase(), 48 * u, teamLine, w * 0.86, {
       size: teamSize,
       color: b.white,
       weight: 900,
-      lineHeight: teamSize * 1.05,
+      lineHeight: teamSize * 1.02,
       maxLines: 2,
-      maxHeight: teamSize * 2.4,
+      maxHeight: teamSize * 2.2,
     });
-    drawWrappedText(`VS ${text("awayTeam").toUpperCase()}`, 48 * u, vsLine, w * 0.86, {
+    // "vs" en script doré
+    drawPremiumText("vs", 52 * u, vsLine, w * 0.6, {
       size: vsSize,
-      color: b.gold,
-      weight: 900,
-      lineHeight: vsSize * 1.05,
+      min: vsSize * 0.6,
+      family: b.scriptFont,
+      weight: 400,
+      gradient: "gold",
+      stroke: rgba(b.dark, 0.35),
+      strokeWidth: Math.max(2, vsSize * 0.03),
       maxLines: 1,
     });
-    drawWrappedText(`${text("time")} · ${text("date")}`, 50 * u, timeLine, w * 0.82, {
-      size: timeSize,
-      min: timeSize * 0.7,
+    drawWrappedText(text("awayTeam").toUpperCase(), 48 * u, awayLine, w * 0.86, {
+      size: teamSize,
+      color: b.white,
+      weight: 900,
+      lineHeight: teamSize * 1.02,
+      maxLines: 2,
+      maxHeight: teamSize * 2.2,
+    });
+
+    // Footer band : lieu | date | heure
+    const footerH = portrait ? 118 * u : 104 * u;
+    const footerY = h - footerH;
+    ctx.save();
+    ctx.fillStyle = blockGradient(0, footerY, w, footerH, rgba(b.dark, 0.9), rgba(b.dark, 0.72));
+    ctx.fillRect(0, footerY, w, footerH);
+    ctx.fillStyle = b.gold;
+    ctx.fillRect(0, footerY, w, Math.max(4, 6 * u));
+    ctx.restore();
+
+    const footerParts = [text("location"), text("date"), text("time")].filter(Boolean);
+    drawFitText(footerParts.join("   |   "), w / 2, footerY + footerH * 0.62, w - 80 * u, {
+      size: portrait ? 34 * u : 30 * u,
+      min: 18 * u,
       color: b.white,
       weight: 800,
-      maxLines: 2,
-      maxHeight: timeSize * 2.3,
+      family: b.accentFont,
+      align: "center",
+      maxHeight: footerH * 0.6,
     });
-    drawWrappedText(text("location"), 50 * u, locationLine, w * 0.82, {
-      size: locationSize,
-      min: locationSize * 0.7,
-      color: b.white,
-      weight: 700,
-      family: b.bodyFont,
-      maxLines: 2,
-      maxHeight: locationSize * 2.4,
-    });
-    drawFooterBrand(w, h, logo);
   }
 
   function renderMatchVs({ format, photo, logo, icon, homeLogo, awayLogo }) {
@@ -1089,6 +1102,90 @@
       maxHeight: 150 * u,
     });
     drawPill(`${text("date")} · ${text("location")}`, 52 * u, h - 118 * u, w - 104 * u, 62 * u, b.white, b.red);
+  }
+
+  // Soirée conviviale : titre dégradé, ruban, pill footer.
+  function renderConvialEvent({ format, photo, logo, icon }) {
+    const { width: w, height: h } = format;
+    const b = state.brand;
+    const u = unit(w, h);
+    const portrait = h > w;
+
+    drawCover(photo, 0, 0, w, h, b.blue);
+    drawOverlay(0, 0, w, h, "rgba(0,0,0,0.26)");
+
+    // Voile bleu dégradé en haut pour la lisibilité des titres
+    ctx.fillStyle = blockGradient(0, 0, w, h * 0.6, rgba(b.blue, 0.9), rgba(b.blue, 0.08));
+    ctx.fillRect(0, 0, w, h * 0.6);
+    drawBottomFade(w, h, 0.5);
+
+    // En-tête : badge + BIENVENUE, logo à droite
+    const badge = 72 * u;
+    drawIconBadge(icon, 46 * u, 44 * u, badge, b.white, b.red);
+    drawSpacedText("BIENVENUE", 46 * u + badge + 24 * u, 44 * u + badge * 0.66, {
+      size: 40 * u,
+      weight: 700,
+      color: b.white,
+      family: b.accentFont,
+      spacing: 4 * u,
+    });
+    drawLogo(logo, w - 150 * u, 40 * u, 108 * u);
+
+    // Sur-titre doré
+    const eyebrowY = 44 * u + badge + 70 * u;
+    drawWrappedText(text("subtitle").toUpperCase(), 52 * u, eyebrowY, w * 0.78, {
+      size: 30 * u,
+      min: 20 * u,
+      color: b.gold,
+      weight: 800,
+      family: b.accentFont,
+      lineHeight: 36 * u,
+      maxLines: 2,
+      maxHeight: 78 * u,
+    });
+
+    // Titre principal dégradé
+    drawPremiumText(text("title").toUpperCase(), 52 * u, eyebrowY + 110 * u, w * 0.82, {
+      size: portrait ? 130 * u : 108 * u,
+      min: 60 * u,
+      gradient: "white",
+      weight: 900,
+      stroke: rgba(b.gold, 0.7),
+      strokeWidth: Math.max(2, 3 * u),
+      lineHeight: portrait ? 122 * u : 104 * u,
+      maxLines: 3,
+      maxHeight: portrait ? 400 * u : 320 * u,
+    });
+
+    // Bloc contact (details)
+    drawWrappedText(text("details"), 52 * u, h - 260 * u, w * 0.7, {
+      size: 30 * u,
+      min: 20 * u,
+      color: b.white,
+      weight: 800,
+      family: b.bodyFont,
+      lineHeight: 40 * u,
+      maxLines: 3,
+      maxHeight: 130 * u,
+    });
+
+    // Ruban rouge + pill footer
+    const ribbonH = 150 * u;
+    const ribbonY = h - ribbonH;
+    drawRibbon(0, ribbonY, w, ribbonH, {
+      color: b.red,
+      tails: false,
+    });
+    // Liserés dorés du ruban
+    ctx.save();
+    ctx.fillStyle = rgba(b.gold, 0.85);
+    ctx.fillRect(0, ribbonY, w, Math.max(3, 5 * u));
+    ctx.fillRect(0, h - Math.max(3, 5 * u), w, Math.max(3, 5 * u));
+    ctx.restore();
+
+    const footer = [text("date"), text("location")].filter(Boolean).join(" - ");
+    const pillW = w - 104 * u;
+    drawPill(footer, 52 * u, ribbonY + ribbonH * 0.28, pillW, 68 * u, b.white, b.red);
   }
 
   function renderPortrait({ format, photo, logo, icon }) {
@@ -1689,6 +1786,206 @@
     gradient.addColorStop(1, `rgba(0,0,0,${strength})`);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
+  }
+
+  function shade(hex, amount) {
+    const normalized = String(hex || "#000000").replace("#", "");
+    const value = parseInt(normalized.length === 3 ? normalized.replace(/(.)/g, "$1$1") : normalized, 16);
+    let r = (value >> 16) & 255;
+    let g = (value >> 8) & 255;
+    let b = value & 255;
+    const target = amount < 0 ? 0 : 255;
+    const p = Math.min(1, Math.abs(amount));
+    r = Math.round((target - r) * p + r);
+    g = Math.round((target - g) * p + g);
+    b = Math.round((target - b) * p + b);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function goldStops() {
+    const b = state.brand;
+    return [b.goldLight || shade(b.gold, 0.55), b.gold, b.goldDeep || shade(b.gold, -0.4)];
+  }
+
+  function gradientStops(spec) {
+    if (Array.isArray(spec)) return spec;
+    if (spec === "gold") return goldStops();
+    if (spec === "white") return ["#ffffff", "#e6ecf5"];
+    return goldStops();
+  }
+
+  // Vertical gradient fill usable on blocks (rectangles, ribbons, panels).
+  function blockGradient(x, y, w, h, topColor, bottomColor) {
+    const gradient = ctx.createLinearGradient(x, y, x, y + h);
+    gradient.addColorStop(0, topColor);
+    gradient.addColorStop(1, bottomColor);
+    return gradient;
+  }
+
+  function buildTextGradient(baselineY, size, spec) {
+    const top = baselineY - size;
+    const gradient = ctx.createLinearGradient(0, top, 0, baselineY + size * 0.15);
+    const stops = gradientStops(spec);
+    stops.forEach((color, index) => {
+      gradient.addColorStop(stops.length === 1 ? 0 : index / (stops.length - 1), color);
+    });
+    return gradient;
+  }
+
+  // Single line text with manual letter-spacing, optional stroke.
+  function drawSpacedText(value, x, y, options = {}) {
+    const clean = normalizeCanvasText(value);
+    if (!clean) return 0;
+    const size = options.size || 24;
+    const weight = options.weight || 800;
+    const family = options.family || state.brand.accentFont || state.brand.titleFont;
+    const spacing = options.spacing != null ? options.spacing : size * 0.12;
+    const align = options.align || "left";
+    ctx.save();
+    setFont(size, weight, family);
+    ctx.textAlign = "left";
+    ctx.textBaseline = options.baseline || "alphabetic";
+    const chars = Array.from(clean);
+    const total = chars.reduce(
+      (sum, ch, index) => sum + ctx.measureText(ch).width + (index < chars.length - 1 ? spacing : 0),
+      0,
+    );
+    let cursor = x;
+    if (align === "center") cursor = x - total / 2;
+    else if (align === "right") cursor = x - total;
+    if (options.stroke) {
+      ctx.lineJoin = "round";
+      ctx.lineWidth = options.strokeWidth || Math.max(2, size * 0.06);
+      ctx.strokeStyle = options.stroke;
+    }
+    chars.forEach((ch) => {
+      const chWidth = ctx.measureText(ch).width;
+      if (options.stroke) ctx.strokeText(ch, cursor, y);
+      ctx.fillStyle = options.color || state.brand.dark;
+      ctx.fillText(ch, cursor, y);
+      cursor += chWidth + spacing;
+    });
+    ctx.restore();
+    return total;
+  }
+
+  // Premium multi-line title: gradient fill, soft glow, optional stroke.
+  function drawPremiumText(value, x, y, maxWidth, options = {}) {
+    const textValue = normalizeCanvasText(value, true);
+    if (!textValue || maxWidth <= 0) return y;
+    const align = options.align || "left";
+    const family = options.family || state.brand.titleFont;
+    const weight = options.weight || 900;
+    const originalSize = options.size || 60;
+    const minSize = options.min || originalSize * 0.5;
+    const lineRatio = options.lineHeight ? options.lineHeight / originalSize : 1.02;
+    const maxLines = Math.max(1, options.maxLines || 3);
+    const maxHeight = options.maxHeight || Infinity;
+    let size = originalSize;
+    let lineHeight = size * lineRatio;
+    let wrapped = [];
+    // Allowed line count is fixed at the original size so shrinking never
+    // "unlocks" an extra line and leaves a mid-word break unresolved.
+    const ratio = Math.max(1, lineRatio);
+    const allowed = Number.isFinite(maxHeight)
+      ? Math.max(1, Math.min(maxLines, Math.floor(maxHeight / (originalSize * ratio))))
+      : maxLines;
+
+    ctx.save();
+    ctx.textAlign = align;
+    ctx.textBaseline = "alphabetic";
+    while (size >= minSize) {
+      setFont(size, weight, family);
+      lineHeight = Math.max(size * 1.0, size * lineRatio);
+      wrapped = wrapText(textValue, maxWidth);
+      if (wrapped.length <= allowed) break;
+      size -= 2;
+    }
+    setFont(size, weight, family);
+    lineHeight = Math.max(size * 1.0, size * lineRatio);
+    if (wrapped.length > allowed) {
+      wrapped = wrapped.slice(0, allowed);
+      wrapped[wrapped.length - 1] = truncateText(wrapped[wrapped.length - 1], maxWidth);
+    }
+
+    const boxX = resolveTextBoxX(x, maxWidth, align);
+    const drawX = xForAlign(boxX, maxWidth, align);
+    wrapped.forEach((line, index) => {
+      const lineY = y + index * lineHeight;
+      if (options.shadow !== false) {
+        ctx.shadowColor = options.shadow || "rgba(0,0,0,0.5)";
+        ctx.shadowBlur = options.shadowBlur != null ? options.shadowBlur : size * 0.16;
+        ctx.shadowOffsetY = size * 0.03;
+      }
+      if (options.stroke) {
+        ctx.lineJoin = "round";
+        ctx.lineWidth = options.strokeWidth || Math.max(3, size * 0.06);
+        ctx.strokeStyle = options.stroke;
+        ctx.strokeText(line, drawX, lineY);
+      }
+      ctx.fillStyle = options.gradient
+        ? buildTextGradient(lineY, size, options.gradient)
+        : options.color || state.brand.white;
+      ctx.fillText(line, drawX, lineY);
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+    });
+    ctx.restore();
+    return y + wrapped.length * lineHeight;
+  }
+
+  // Banner ribbon with folded tails and a gradient bar.
+  function drawRibbon(x, y, w, h, options = {}) {
+    const color = options.color || state.brand.red;
+    const tailColor = options.tailColor || shade(color, -0.28);
+    const tail = options.tail != null ? options.tail : Math.min(h * 0.9, w * 0.12);
+    const notch = options.notch != null ? options.notch : Math.min(h * 0.5, tail * 0.6);
+    ctx.save();
+    if (options.tails !== false && tail > 0) {
+      ctx.fillStyle = tailColor;
+      ctx.beginPath();
+      ctx.moveTo(x, y + h * 0.12);
+      ctx.lineTo(x - tail, y + h * 0.12);
+      ctx.lineTo(x - tail + notch, y + h * 0.5);
+      ctx.lineTo(x - tail, y + h * 0.88);
+      ctx.lineTo(x, y + h * 0.88);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x + w, y + h * 0.12);
+      ctx.lineTo(x + w + tail, y + h * 0.12);
+      ctx.lineTo(x + w + tail - notch, y + h * 0.5);
+      ctx.lineTo(x + w + tail, y + h * 0.88);
+      ctx.lineTo(x + w, y + h * 0.88);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = blockGradient(
+      x,
+      y,
+      w,
+      h,
+      options.gradientTop || shade(color, 0.14),
+      options.gradientBottom || shade(color, -0.14),
+    );
+    ctx.fillRect(x, y, w, h);
+    ctx.restore();
+  }
+
+  function drawFooterBrand(w, h, logo) {
+    const u = unit(w, h);
+    const b = state.brand;
+    const mention = text("footer");
+    if (!mention) return;
+    drawSpacedText(mention.toUpperCase(), w / 2, h - 30 * u, {
+      size: 22 * u,
+      weight: 800,
+      color: b.gold,
+      family: b.accentFont,
+      align: "center",
+      spacing: 4 * u,
+    });
   }
 
   function normalizeCanvasText(value, preserveBreaks = false) {
