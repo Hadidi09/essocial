@@ -46,11 +46,15 @@
     brandDefaults: {
       red: "#d20f1f",
       blue: "#1f5ca8",
-      gold: "#d7b65d",
+      gold: "#d4af37",
+      goldLight: "#f7e7ad",
+      goldDeep: "#a9781f",
       dark: "#111827",
       white: "#ffffff",
       titleFont: "Montserrat, Arial Black, Arial, sans-serif",
       bodyFont: "Open Sans, Segoe UI, Arial, sans-serif",
+      accentFont: "Bebas Neue, Oswald, Impact, sans-serif",
+      scriptFont: "Yellowtail, Segoe Script, cursive",
     },
     formats: [
       {
@@ -322,7 +326,7 @@
         category: "evenements",
         name: "Soirée conviviale",
         description: "Moules-frites, fondue, tartiflette... les soirées organisées par le club.",
-        layout: "event",
+        layout: "convivial-event",
         defaultFormat: "instagram-square",
         defaultImage: imagePath + "captain-handshake.jpg",
         defaultIcon: "megaphone",
