@@ -730,8 +730,8 @@
     const u = unit(w, h);
 
     drawCover(photo, 0, 0, w, h, b.dark);
-    drawOverlay(0, 0, w, h, "rgba(0,0,0,0.32)");
-    drawBottomFade(w, h, 0.6);
+    drawOverlay(0, 0, w, h, "rgba(0,0,0,0.28)");
+    drawBottomFade(w, h, 0.65);
 
     drawIconBadge(icon, 46 * u, 42 * u, 74 * u, b.white, b.red);
     drawLogo(logo, w - 150 * u, 34 * u, 112 * u);
@@ -748,109 +748,98 @@
     });
     drawPill(text("competition"), titleX, 230 * u, Math.min(420 * u, titleWidth), 44 * u, b.red, b.white);
 
-    const contentY = 310 * u;
-    const panelPadding = 32 * u;
-    const cardWidth = (w - panelPadding * 3) / 2;
-    const cardHeight = Math.min(h - contentY - 180 * u, 520 * u);
-    const leftCardX = panelPadding;
-    const rightCardX = w - cardWidth - panelPadding;
-    const cardY = contentY;
-    const badgeSize = Math.min(160 * u, cardWidth * 0.6);
+    const portrait = h > w;
+    const contentStartY = portrait ? 320 * u : 310 * u;
+    const badgeSize = portrait ? 180 * u : 140 * u;
+    const gapBetweenTeams = w * 0.04;
+    const leftLogoX = (w - badgeSize * 2 - gapBetweenTeams) / 2;
+    const rightLogoX = leftLogoX + badgeSize + gapBetweenTeams;
+    const logoY = contentStartY;
+
+    if (homeLogo) {
+      drawContain(homeLogo, leftLogoX, logoY, badgeSize, badgeSize);
+    } else {
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.12)";
+      roundRect(leftLogoX, logoY, badgeSize, badgeSize, 20 * u);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    if (awayLogo) {
+      drawContain(awayLogo, rightLogoX, logoY, badgeSize, badgeSize);
+    } else {
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.12)";
+      roundRect(rightLogoX, logoY, badgeSize, badgeSize, 20 * u);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    const vsX = w * 0.5;
+    const vsY = logoY + badgeSize * 0.5;
+    drawFitText("VS", vsX, vsY, 180 * u, {
+      size: portrait ? 160 * u : 120 * u,
+      min: 72 * u,
+      color: b.gold,
+      weight: 900,
+      align: "center",
+    });
+
+    const teamStartY = logoY + badgeSize + (portrait ? 54 * u : 42 * u);
+    const homeTeamX = leftLogoX + badgeSize / 2;
+    const awayTeamX = rightLogoX + badgeSize / 2;
+    const teamSize = portrait ? 52 * u : 40 * u;
+
+    drawWrappedText(text("homeTeam").toUpperCase(), homeTeamX - badgeSize * 0.4, teamStartY, badgeSize * 0.8, {
+      size: teamSize,
+      min: 24 * u,
+      color: b.white,
+      weight: 900,
+      align: "center",
+      lineHeight: teamSize * 1.08,
+      maxLines: 2,
+    });
+
+    drawWrappedText(text("awayTeam").toUpperCase(), awayTeamX - badgeSize * 0.4, teamStartY, badgeSize * 0.8, {
+      size: teamSize,
+      min: 24 * u,
+      color: b.white,
+      weight: 900,
+      align: "center",
+      lineHeight: teamSize * 1.08,
+      maxLines: 2,
+    });
+
+    const footerY = h - (portrait ? 160 * u : 140 * u);
+    const dateTimeSize = portrait ? 32 * u : 28 * u;
+    const locationSize = portrait ? 26 * u : 24 * u;
 
     ctx.save();
-    ctx.fillStyle = "rgba(255,255,255,0.08)";
-    roundRect(leftCardX, cardY, cardWidth, cardHeight, 28 * u);
-    ctx.fill();
-    roundRect(rightCardX, cardY, cardWidth, cardHeight, 28 * u);
-    ctx.fill();
+    ctx.fillStyle = "rgba(17,24,39,0.7)";
+    ctx.fillRect(0, footerY - 20 * u, w, h - (footerY - 20 * u));
     ctx.restore();
 
-    const logoX = leftCardX + (cardWidth - badgeSize) / 2;
-    const logoY = cardY + 42 * u;
-    if (homeLogo) {
-      drawContain(homeLogo, logoX, logoY, badgeSize, badgeSize);
-    } else {
-      ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,0.18)";
-      roundRect(logoX, logoY, badgeSize, badgeSize, 22 * u);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    drawWrappedText(text("homeTeam").toUpperCase(), leftCardX + 24 * u, logoY + badgeSize + 54 * u, cardWidth - 48 * u, {
-      size: 42 * u,
-      min: 26 * u,
-      color: b.white,
-      weight: 900,
-      align: "center",
-      lineHeight: 46 * u,
-      maxLines: 2,
-    });
-    drawWrappedText(`${text("date")} · ${text("time")}`, leftCardX + 24 * u, logoY + badgeSize + 120 * u, cardWidth - 48 * u, {
-      size: 26 * u,
-      min: 18 * u,
+    drawWrappedText(`${text("date")} · ${text("time")}`, 50 * u, footerY, w - 100 * u, {
+      size: dateTimeSize,
+      min: dateTimeSize * 0.7,
       color: b.gold,
       weight: 800,
       align: "center",
       maxLines: 1,
     });
-    drawWrappedText(text("location"), leftCardX + 24 * u, logoY + badgeSize + 158 * u, cardWidth - 48 * u, {
-      size: 22 * u,
-      min: 16 * u,
+
+    drawWrappedText(text("location"), 50 * u, footerY + (portrait ? 58 * u : 48 * u), w - 100 * u, {
+      size: locationSize,
+      min: locationSize * 0.7,
       color: b.white,
-      family: b.bodyFont,
       weight: 700,
-      align: "center",
-      maxLines: 2,
-    });
-
-    const awayLogoX = rightCardX + (cardWidth - badgeSize) / 2;
-    if (awayLogo) {
-      drawContain(awayLogo, awayLogoX, logoY, badgeSize, badgeSize);
-    } else {
-      ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,0.18)";
-      roundRect(awayLogoX, logoY, badgeSize, badgeSize, 22 * u);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    drawWrappedText(text("awayTeam").toUpperCase(), rightCardX + 24 * u, logoY + badgeSize + 54 * u, cardWidth - 48 * u, {
-      size: 42 * u,
-      min: 26 * u,
-      color: b.white,
-      weight: 900,
-      align: "center",
-      lineHeight: 46 * u,
-      maxLines: 2,
-    });
-    drawWrappedText(`${text("date")} · ${text("time")}`, rightCardX + 24 * u, logoY + badgeSize + 120 * u, cardWidth - 48 * u, {
-      size: 26 * u,
-      min: 18 * u,
-      color: b.gold,
-      weight: 800,
-      align: "center",
-      maxLines: 1,
-    });
-    drawWrappedText(text("location"), rightCardX + 24 * u, logoY + badgeSize + 158 * u, cardWidth - 48 * u, {
-      size: 22 * u,
-      min: 16 * u,
-      color: b.white,
       family: b.bodyFont,
-      weight: 700,
       align: "center",
       maxLines: 2,
     });
 
-    drawFitText("VS", w * 0.5, cardY + cardHeight * 0.45, 160 * u, {
-      size: 120 * u,
-      min: 64 * u,
-      color: b.gold,
-      weight: 900,
-      align: "center",
-    });
-
-    drawFooterText(text("footer"), w, h, b);
+    drawFooterBrand(w, h, logo);
   }
 
   function renderResult({ format, photo, logo, icon }) {
