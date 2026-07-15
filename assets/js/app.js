@@ -629,7 +629,7 @@
 
     const renderer = renderers[template.layout] || renderInfo;
     renderer(assets);
-    if (assets.partnerLogo && template.layout !== "sponsor") {
+    if (assets.partnerLogo && template.layout !== "sponsor" && template.layout !== "match") {
       drawPartnerBadge(assets.partnerLogo, format.width, format.height, unit(format.width, format.height));
     }
   }
@@ -638,38 +638,51 @@
     return Math.max(requestedY, iconY + iconSize + gap);
   }
 
-  function renderMatch({ format, photo, logo, icon }) {
+  
+  
+  
+  function renderMatch({ format, photo, logo, icon, homeLogo, awayLogo, partnerLogo }) {
     const { width: w, height: h } = format;
     const b = state.brand;
     const u = unit(w, h);
+    const portrait = h > w;
     drawCover(photo, 0, 0, w, h, b.dark);
     drawOverlay(0, 0, w, h, "rgba(0,0,0,0.24)");
     drawBottomFade(w, h, 0.7);
 
+    // Red panel (left side) - diagonal from left-center to bottom
     ctx.fillStyle = rgba(b.red, 0.9);
     ctx.beginPath();
     ctx.moveTo(0, h * 0.58);
     ctx.lineTo(w * 0.42, h * 0.5);
-    ctx.lineTo(w, h);
+    ctx.lineTo(w * 0.5, h);
     ctx.lineTo(0, h);
     ctx.closePath();
     ctx.fill();
 
+    // Blue panel (right side) - diagonal from bottom to right-center
     ctx.fillStyle = rgba(b.blue, 0.86);
     ctx.beginPath();
-    ctx.moveTo(w * 0.55, h);
+    ctx.moveTo(w * 0.5, h);
     ctx.lineTo(w, h * 0.73);
     ctx.lineTo(w, h);
     ctx.closePath();
     ctx.fill();
 
-    drawIconBadge(icon, 46 * u, 42 * u, 74 * u, b.white, b.red);
-    drawLogo(logo, w - 150 * u, 34 * u, 112 * u);
+    // No calendar icon - removed as requested
+    // Club logo in top-right - draw without white background (transparent PNG)
+    if (logo) {
+      const logoSize = 100 * u;
+      const logoX = w - logoSize - 40 * u;
+      const logoY = 34 * u;
+      drawContain(logo, logoX, logoY, logoSize, logoSize);
+    }
 
-    const titleX = 150 * u;
-    const titleWidth = w * 0.56;
+    // Title and competition pill - positioned on left side
+    const titleX = 48 * u;
+    const titleWidth = w * 0.52;
     drawFitText(text("title").toUpperCase(), titleX, 170 * u, titleWidth, {
-      size: h > w ? 92 * u : 70 * u,
+      size: portrait ? 92 * u : 70 * u,
       min: 44 * u,
       maxHeight: 104 * u,
       color: b.white,
@@ -679,65 +692,133 @@
 
     drawPill(text("competition"), titleX, 226 * u, Math.min(360 * u, w * 0.45), 42 * u, b.red, b.white);
 
-    const portrait = h > w;
-    const panelY = portrait ? h - 520 * u : h - 420 * u;
-    const teamSize = portrait ? 58 * u : 46 * u;
-    const vsSize = portrait ? 82 * u : 66 * u;
-    const teamLine = panelY + (portrait ? 72 * u : 80 * u);
-    const vsLine = panelY + (portrait ? 150 * u : 158 * u);
-    const awayLine = panelY + (portrait ? 226 * u : 234 * u);
+    // Team logos and names in the bottom panels
+    const panelTop = portrait ? h * 0.58 : h * 0.56;
+    const logoSize = portrait ? 140 * u : 120 * u;
+    const teamNameSize = portrait ? 42 * u : 36 * u;
 
-    drawWrappedText(text("homeTeam").toUpperCase(), 48 * u, teamLine, w * 0.86, {
-      size: teamSize,
+    // Left panel (red) - ES DOUBS logo
+    const leftPanelCenterX = w * 0.22;
+    const leftLogoX = leftPanelCenterX - logoSize / 2;
+    const leftLogoY = panelTop + 25 * u;
+
+    if (homeLogo) {
+      ctx.save();
+      ctx.shadowColor = "rgba(255,255,255,0.3)";
+      ctx.shadowBlur = 20 * u;
+      drawContain(homeLogo, leftLogoX, leftLogoY, logoSize, logoSize);
+      ctx.restore();
+    } else {
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.25)";
+      ctx.font = "bold " + Math.round(40 * u) + "px " + b.titleFont;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("?", leftPanelCenterX, leftLogoY + logoSize / 2);
+      ctx.restore();
+    }
+
+    // ES DOUBS team name below logo
+    drawWrappedText(text("homeTeam").toUpperCase(), leftPanelCenterX - w * 0.18, leftLogoY + logoSize + teamNameSize * 0.6, w * 0.36, {
+      size: teamNameSize,
+      min: 24 * u,
       color: b.white,
       weight: 900,
-      lineHeight: teamSize * 1.02,
+      align: "center",
+      lineHeight: teamNameSize * 1.1,
       maxLines: 2,
-      maxHeight: teamSize * 2.2,
+      maxHeight: teamNameSize * 2.3,
+      family: b.accentFont,
     });
-    // "vs" en script doré
-    drawPremiumText("vs", 52 * u, vsLine, w * 0.6, {
-      size: vsSize,
-      min: vsSize * 0.6,
-      family: b.scriptFont,
-      weight: 400,
-      gradient: "gold",
-      stroke: rgba(b.dark, 0.35),
-      strokeWidth: Math.max(2, vsSize * 0.03),
-      maxLines: 1,
-    });
-    drawWrappedText(text("awayTeam").toUpperCase(), 48 * u, awayLine, w * 0.86, {
-      size: teamSize,
+
+    // Right panel (blue) - BESANCON FT logo
+    const rightPanelCenterX = w * 0.78;
+    const rightLogoX = rightPanelCenterX - logoSize / 2;
+    const rightLogoY = panelTop + 25 * u;
+
+    if (awayLogo) {
+      ctx.save();
+      ctx.shadowColor = "rgba(255,255,255,0.3)";
+      ctx.shadowBlur = 20 * u;
+      drawContain(awayLogo, rightLogoX, rightLogoY, logoSize, logoSize);
+      ctx.restore();
+    } else {
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.25)";
+      ctx.font = "bold " + Math.round(40 * u) + "px " + b.titleFont;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("?", rightPanelCenterX, rightLogoY + logoSize / 2);
+      ctx.restore();
+    }
+
+    // BESANCON FT team name below logo
+    drawWrappedText(text("awayTeam").toUpperCase(), rightPanelCenterX - w * 0.18, rightLogoY + logoSize + teamNameSize * 0.6, w * 0.36, {
+      size: teamNameSize,
+      min: 24 * u,
       color: b.white,
       weight: 900,
-      lineHeight: teamSize * 1.02,
+      align: "center",
+      lineHeight: teamNameSize * 1.1,
       maxLines: 2,
-      maxHeight: teamSize * 2.2,
+      maxHeight: teamNameSize * 2.3,
+      family: b.accentFont,
     });
+
+    // Large golden "VS" with strong shadow for readability
+    const vsY = panelTop + logoSize * 0.45 + 10 * u;
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.6)";
+    ctx.shadowBlur = 15 * u;
+    ctx.shadowOffsetX = 3 * u;
+    ctx.shadowOffsetY = 3 * u;
+    drawFitText("VS", w * 0.5, vsY, 200 * u, {
+      size: portrait ? 170 * u : 140 * u,
+      min: 90 * u,
+      color: b.gold,
+      weight: 900,
+      align: "center",
+      stroke: rgba(b.dark, 0.5),
+      strokeWidth: Math.max(4, 5 * u),
+      clip: false,
+    });
+    ctx.restore();
 
     // Footer band : lieu | date | heure
-    const footerH = portrait ? 118 * u : 104 * u;
+    const footerH = portrait ? 130 * u : 115 * u;
     const footerY = h - footerH;
     ctx.save();
-    ctx.fillStyle = blockGradient(0, footerY, w, footerH, rgba(b.dark, 0.9), rgba(b.dark, 0.72));
+    ctx.fillStyle = blockGradient(0, footerY, w, footerH, rgba(b.dark, 0.95), rgba(b.dark, 0.75));
     ctx.fillRect(0, footerY, w, footerH);
     ctx.fillStyle = b.gold;
     ctx.fillRect(0, footerY, w, Math.max(4, 6 * u));
     ctx.restore();
 
+    // Partner logo (Facebook icon) inside footer - bottom-left, small, vertically centered
+    if (partnerLogo) {
+      const partnerSize = 40 * u;
+      const partnerX = 28 * u;
+      const partnerY = footerY + (footerH - partnerSize) / 2;
+      ctx.save();
+      // No background, just draw the icon directly
+      drawContain(partnerLogo, partnerX, partnerY, partnerSize, partnerSize);
+      ctx.restore();
+    }
+
+    // Footer text with larger size and Bebas Neue / accent font
     const footerParts = [text("location"), text("date"), text("time")].filter(Boolean);
-    drawFitText(footerParts.join("   |   "), w / 2, footerY + footerH * 0.62, w - 80 * u, {
-      size: portrait ? 34 * u : 30 * u,
-      min: 18 * u,
+    const footerTextX = partnerLogo ? w * 0.5 + 20 * u : w * 0.5;
+    drawFitText(footerParts.join("   |   "), footerTextX, footerY + footerH * 0.58, w - 80 * u, {
+      size: portrait ? 40 * u : 36 * u,
+      min: 22 * u,
       color: b.white,
       weight: 800,
       family: b.accentFont,
       align: "center",
       maxHeight: footerH * 0.6,
+      clip: false,
     });
-  }
-
-  function renderMatchVs({ format, photo, logo, icon, homeLogo, awayLogo }) {
+  }function renderMatchVs({ format, photo, logo, icon, homeLogo, awayLogo }) {
     const { width: w, height: h } = format;
     const b = state.brand;
     const u = unit(w, h);

@@ -325,17 +325,29 @@
         id: "soiree-conviviale",
         category: "evenements",
         name: "Soirée conviviale",
-        description: "Moules-frites, fondue, tartiflette... les soirées organisées par le club.",
+        description:
+          "Moules-frites, fondue, tartiflette... les soirées organisées par le club.",
         layout: "convivial-event",
         defaultFormat: "instagram-square",
         defaultImage: imagePath + "captain-handshake.jpg",
-        defaultIcon: "megaphone",
-        fields: eventFields(
-          "Soirée Moules-Frites",
-          "Repas convivial organisé par le club",
-          "Samedi 22 novembre - 19h30",
-          "Salle des fêtes - ES Doubs",
-        ),
+        defaultIcon: "ball",
+        fields: [
+          field("title", "Titre", "Soirée Moules-Frites"),
+          field(
+            "subtitle",
+            "Sous-titre",
+            "Repas convivial organisé par le club",
+          ),
+          field("date", "Date", "Samedi 22 novembre - 19h30"),
+          field("location", "Lieu", "Salle des fêtes - ES Doubs"),
+          field(
+            "details",
+            "Détails",
+            "Auprès de Jacques Breton | 03 25 45 87 85",
+            "textarea",
+          ),
+          field("cta", "Appel à l'action", "Contactez-nous"),
+        ],
       },
       {
         id: "anniversaire-club",
