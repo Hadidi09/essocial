@@ -1,76 +1,79 @@
+/* ES Doubs Studio Communication — app.js v2 — Direction artistique refondée */
 (function () {
   "use strict";
 
-  const data = window.ESD_APP_DATA;
+  // ── DATA & STATE ────────────────────────────────────────────
+  const data        = window.ESD_APP_DATA;
   const STORAGE_KEY = "esd-studio-saved-designs";
-  const BRAND_KEY = "esd-studio-brand";
-  const LOGO_SRC = "assets/images/esd_logo.png";
-  const ELLIPSIS = "\u2026";
+  const BRAND_KEY   = "esd-studio-brand";
+  const DRAFT_KEY   = "esd-studio-drafts";
+  const LOGO_SRC    = "assets/images/esd_logo.png";
+  const ELLIPSIS    = "\u2026";
 
   const canvas = document.getElementById("designCanvas");
-  const ctx = canvas.getContext("2d");
+  const ctx    = canvas.getContext("2d");
 
   const els = {
-    templateSearch: document.getElementById("templateSearch"),
-    categoryTabs: document.getElementById("categoryTabs"),
-    templateGrid: document.getElementById("templateGrid"),
-    templateCount: document.getElementById("templateCount"),
-    currentCategory: document.getElementById("currentCategory"),
-    currentTemplateName: document.getElementById("currentTemplateName"),
-    formatSelect: document.getElementById("formatSelect"),
-    formatMeta: document.getElementById("formatMeta"),
-    autosaveState: document.getElementById("autosaveState"),
-    fieldEditor: document.getElementById("fieldEditor"),
-    dropZone: document.getElementById("dropZone"),
-    imageUpload: document.getElementById("imageUpload"),
-    homeLogoUpload: document.getElementById("homeLogoUpload"),
-    awayLogoUpload: document.getElementById("awayLogoUpload"),
-    partnerUpload: document.getElementById("partnerUpload"),
-    partnerSize: document.getElementById("partnerSize"),
-    partnerPosition: document.getElementById("partnerPosition"),
-    partnerStyle: document.getElementById("partnerStyle"),
-    mediaBank: document.getElementById("mediaBank"),
-    iconBank: document.getElementById("iconBank"),
-    adminToggle: document.getElementById("adminToggle"),
-    adminPanel: document.getElementById("adminPanel"),
-    brandRed: document.getElementById("brandRed"),
-    brandBlue: document.getElementById("brandBlue"),
-    brandGold: document.getElementById("brandGold"),
-    brandDark: document.getElementById("brandDark"),
-    brandTitleFont: document.getElementById("brandTitleFont"),
-    brandBodyFont: document.getElementById("brandBodyFont"),
-    resetBrand: document.getElementById("resetBrand"),
-    saveDesign: document.getElementById("saveDesign"),
-    clearSaved: document.getElementById("clearSaved"),
-    savedList: document.getElementById("savedList"),
-    exportPng: document.getElementById("exportPng"),
-    exportJpg: document.getElementById("exportJpg"),
-    exportPdf: document.getElementById("exportPdf"),
+    templateSearch      : document.getElementById("templateSearch"),
+    categoryTabs        : document.getElementById("categoryTabs"),
+    templateGrid        : document.getElementById("templateGrid"),
+    templateCount       : document.getElementById("templateCount"),
+    currentCategory     : document.getElementById("currentCategory"),
+    currentTemplateName : document.getElementById("currentTemplateName"),
+    formatSelect        : document.getElementById("formatSelect"),
+    formatMeta          : document.getElementById("formatMeta"),
+    autosaveState       : document.getElementById("autosaveState"),
+    fieldEditor         : document.getElementById("fieldEditor"),
+    dropZone            : document.getElementById("dropZone"),
+    imageUpload         : document.getElementById("imageUpload"),
+    homeLogoUpload      : document.getElementById("homeLogoUpload"),
+    awayLogoUpload      : document.getElementById("awayLogoUpload"),
+    partnerUpload       : document.getElementById("partnerUpload"),
+    partnerSize         : document.getElementById("partnerSize"),
+    partnerPosition     : document.getElementById("partnerPosition"),
+    partnerStyle        : document.getElementById("partnerStyle"),
+    mediaBank           : document.getElementById("mediaBank"),
+    iconBank            : document.getElementById("iconBank"),
+    adminToggle         : document.getElementById("adminToggle"),
+    adminPanel          : document.getElementById("adminPanel"),
+    brandRed            : document.getElementById("brandRed"),
+    brandBlue           : document.getElementById("brandBlue"),
+    brandGold           : document.getElementById("brandGold"),
+    brandDark           : document.getElementById("brandDark"),
+    brandTitleFont      : document.getElementById("brandTitleFont"),
+    brandBodyFont       : document.getElementById("brandBodyFont"),
+    resetBrand          : document.getElementById("resetBrand"),
+    saveDesign          : document.getElementById("saveDesign"),
+    clearSaved          : document.getElementById("clearSaved"),
+    savedList           : document.getElementById("savedList"),
+    exportPng           : document.getElementById("exportPng"),
+    exportJpg           : document.getElementById("exportJpg"),
+    exportPdf           : document.getElementById("exportPdf"),
   };
 
   const imageCache = new Map();
-  const DRAFT_KEY = "esd-studio-drafts";
   let selectedCategory = data.categories[0].id;
-  let searchTerm = "";
+  let searchTerm  = "";
   let renderFrame = 0;
   let renderVersion = 0;
 
   const savedBrand = readJson(BRAND_KEY, null);
   const state = {
-    templateId: data.templates[0].id,
-    formatId: data.templates[0].defaultFormat,
-    fields: {},
-    imageSrc: data.templates[0].defaultImage,
-    homeLogoSrc: "",
-    awayLogoSrc: "",
-    partnerLogoSrc: "",
-    partnerLogoSize: 120,
+    templateId         : data.templates[0].id,
+    formatId           : data.templates[0].defaultFormat,
+    fields             : {},
+    imageSrc           : data.templates[0].defaultImage,
+    homeLogoSrc        : "",
+    awayLogoSrc        : "",
+    partnerLogoSrc     : "",
+    partnerLogoSize    : 120,
     partnerLogoPosition: "bottom-left",
-    partnerLogoStyle: "badge",
-    iconId: data.templates[0].defaultIcon,
-    brand: { ...data.brandDefaults, ...(savedBrand || {}) },
+    partnerLogoStyle   : "badge",
+    iconId             : data.templates[0].defaultIcon,
+    brand              : { ...data.brandDefaults, ...(savedBrand || {}) },
   };
 
+  // ── INIT ────────────────────────────────────────────────────
   function init() {
     buildFormatSelect();
     bindEvents();
@@ -78,2350 +81,839 @@
     selectTemplate(state.templateId);
     renderSavedList();
     saveDraftDebounced();
-
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(requestRender);
-    }
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(requestRender);
   }
 
-  function debounce(fn, wait) {
+  function debounce(fn, ms) {
     let t = null;
-    return function (...args) {
-      clearTimeout(t);
-      t = setTimeout(() => fn.apply(this, args), wait);
-    };
+    return function (...a) { clearTimeout(t); t = setTimeout(() => fn.apply(this, a), ms); };
   }
 
   function saveDraft() {
     try {
       const drafts = readJson(DRAFT_KEY, {});
       drafts[state.templateId] = {
-        templateId: state.templateId,
-        formatId: state.formatId,
-        fields: { ...state.fields },
-        imageSrc: state.imageSrc,
-        homeLogoSrc: state.homeLogoSrc,
-        awayLogoSrc: state.awayLogoSrc,
-        partnerLogoSrc: state.partnerLogoSrc,
-        iconId: state.iconId,
-        brand: { ...state.brand },
-        updatedAt: Date.now(),
+        templateId: state.templateId, formatId: state.formatId,
+        fields: { ...state.fields }, imageSrc: state.imageSrc,
+        homeLogoSrc: state.homeLogoSrc, awayLogoSrc: state.awayLogoSrc,
+        partnerLogoSrc: state.partnerLogoSrc, iconId: state.iconId,
+        brand: { ...state.brand }, updatedAt: Date.now(),
       };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(drafts));
       setStatus("Brouillon sauvegardé");
-    } catch (error) {
-      console.warn(error);
-    }
+    } catch (e) { console.warn(e); }
   }
-
   const saveDraftDebounced = debounce(saveDraft, 700);
 
+  // ── EVENTS ──────────────────────────────────────────────────
   function bindEvents() {
-    els.templateSearch.addEventListener("input", (event) => {
-      searchTerm = event.target.value.trim().toLowerCase();
-      renderTemplateList();
-    });
-
-    els.formatSelect.addEventListener("change", (event) => {
-      state.formatId = event.target.value;
-      requestRender();
-    });
-
-    els.imageUpload.addEventListener("change", (event) => {
-      handleUpload(event.target.files[0], "main");
-    });
-
-    els.homeLogoUpload.addEventListener("change", (event) => {
-      handleUpload(event.target.files[0], "homeLogo");
-    });
-
-    els.awayLogoUpload.addEventListener("change", (event) => {
-      handleUpload(event.target.files[0], "awayLogo");
-    });
-
-    els.partnerUpload.addEventListener("change", (event) => {
-      handleUpload(event.target.files[0], "partner");
-    });
-
-    if (els.partnerSize) {
-      els.partnerSize.addEventListener("input", (e) => {
-        state.partnerLogoSize = Number(e.target.value) || 120;
-        requestRender();
-      });
-      els.partnerSize.value = state.partnerLogoSize;
-    }
-
-    if (els.partnerPosition) {
-      els.partnerPosition.addEventListener("change", (e) => {
-        state.partnerLogoPosition = e.target.value || "bottom-left";
-        requestRender();
-      });
-      els.partnerPosition.value = state.partnerLogoPosition;
-    }
-
-    if (els.partnerStyle) {
-      els.partnerStyle.addEventListener("change", (e) => {
-        state.partnerLogoStyle = e.target.value || "badge";
-        requestRender();
-      });
-      els.partnerStyle.value = state.partnerLogoStyle;
-    }
-
-    ["dragenter", "dragover"].forEach((type) => {
-      els.dropZone.addEventListener(type, (event) => {
-        event.preventDefault();
-        els.dropZone.classList.add("dragover");
-      });
-    });
-
-    ["dragleave", "drop"].forEach((type) => {
-      els.dropZone.addEventListener(type, (event) => {
-        event.preventDefault();
-        els.dropZone.classList.remove("dragover");
-      });
-    });
-
-    els.dropZone.addEventListener("drop", (event) => {
-      const file = event.dataTransfer.files && event.dataTransfer.files[0];
-      handleUpload(file, "main");
-    });
-
-    els.adminToggle.addEventListener("click", () => {
-      const visible = els.adminPanel.hasAttribute("hidden");
-      els.adminPanel.toggleAttribute("hidden", !visible);
-      els.adminToggle.classList.toggle("active", visible);
-    });
-
-    ["brandRed", "brandBlue", "brandGold", "brandDark", "brandTitleFont", "brandBodyFont"].forEach((id) => {
-      els[id].addEventListener("input", updateBrandFromControls);
-    });
-
-    els.resetBrand.addEventListener("click", () => {
-      state.brand = { ...data.brandDefaults };
-      try {
-        localStorage.removeItem(BRAND_KEY);
-      } catch (error) {
-        console.warn(error);
-        setStatus("Réinitialisation de l'identité impossible");
-      }
-      applyBrandToUi();
-      requestRender();
-    });
-
-    if (els.resetTemplate) {
-      els.resetTemplate.addEventListener("click", resetCurrentTemplate);
-    }
-
+    els.templateSearch.addEventListener("input", (e) => { searchTerm = e.target.value.trim().toLowerCase(); renderTemplateList(); });
+    els.formatSelect.addEventListener("change",    (e) => { state.formatId = e.target.value; requestRender(); });
+    els.imageUpload.addEventListener("change",     (e) => handleUpload(e.target.files[0], "main"));
+    els.homeLogoUpload.addEventListener("change",  (e) => handleUpload(e.target.files[0], "homeLogo"));
+    els.awayLogoUpload.addEventListener("change",  (e) => handleUpload(e.target.files[0], "awayLogo"));
+    els.partnerUpload.addEventListener("change",   (e) => handleUpload(e.target.files[0], "partner"));
+    if (els.partnerSize)     { els.partnerSize.addEventListener("input",    (e) => { state.partnerLogoSize = Number(e.target.value) || 120; requestRender(); }); els.partnerSize.value = state.partnerLogoSize; }
+    if (els.partnerPosition) { els.partnerPosition.addEventListener("change", (e) => { state.partnerLogoPosition = e.target.value || "bottom-left"; requestRender(); }); els.partnerPosition.value = state.partnerLogoPosition; }
+    if (els.partnerStyle)    { els.partnerStyle.addEventListener("change",   (e) => { state.partnerLogoStyle = e.target.value || "badge"; requestRender(); }); els.partnerStyle.value = state.partnerLogoStyle; }
+    ["dragenter","dragover"].forEach((t) => els.dropZone.addEventListener(t, (e) => { e.preventDefault(); els.dropZone.classList.add("dragover"); }));
+    ["dragleave","drop"].forEach((t)     => els.dropZone.addEventListener(t, (e) => { e.preventDefault(); els.dropZone.classList.remove("dragover"); }));
+    els.dropZone.addEventListener("drop", (e) => handleUpload(e.dataTransfer.files && e.dataTransfer.files[0], "main"));
+    els.adminToggle.addEventListener("click", () => { const v = els.adminPanel.hasAttribute("hidden"); els.adminPanel.toggleAttribute("hidden", !v); els.adminToggle.classList.toggle("active", v); });
+    ["brandRed","brandBlue","brandGold","brandDark","brandTitleFont","brandBodyFont"].forEach((id) => els[id].addEventListener("input", updateBrandFromControls));
+    els.resetBrand.addEventListener("click", () => { state.brand = { ...data.brandDefaults }; try { localStorage.removeItem(BRAND_KEY); } catch(e){} applyBrandToUi(); requestRender(); });
+    if (els.resetTemplate) els.resetTemplate.addEventListener("click", () => { selectTemplate(state.templateId); setStatus("Modèle réinitialisé"); });
     els.saveDesign.addEventListener("click", saveCurrentDesign);
-    els.clearSaved.addEventListener("click", () => {
-      if (!confirm("Supprimer toutes les sauvegardes locales ?")) return;
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-        setStatus("Sauvegardes supprimées");
-      } catch (error) {
-        console.warn(error);
-        setStatus("Suppression impossible (stockage indisponible)");
-      }
-      renderSavedList();
-    });
-
-    els.exportPng.addEventListener("click", () => exportImage("image/png", "png"));
+    els.clearSaved.addEventListener("click", () => { if (!confirm("Supprimer toutes les sauvegardes locales ?")) return; try { localStorage.removeItem(STORAGE_KEY); setStatus("Sauvegardes supprimées"); } catch(e){} renderSavedList(); });
+    els.exportPng.addEventListener("click", () => exportImage("image/png",  "png"));
     els.exportJpg.addEventListener("click", () => exportImage("image/jpeg", "jpg"));
     els.exportPdf.addEventListener("click", exportPdf);
   }
 
-
+  // ── UI BUILDERS ─────────────────────────────────────────────
   function buildFormatSelect() {
     els.formatSelect.innerHTML = "";
-    data.formats.forEach((format) => {
-      const option = document.createElement("option");
-      option.value = format.id;
-      option.textContent = `${format.name} · ${format.width}×${format.height}`;
-      els.formatSelect.appendChild(option);
-    });
+    data.formats.forEach((f) => { const o = document.createElement("option"); o.value = f.id; o.textContent = `${f.name} · ${f.width}×${f.height}`; els.formatSelect.appendChild(o); });
   }
 
   function renderCategoryTabs() {
     els.categoryTabs.innerHTML = "";
-    data.categories.forEach((category) => {
-      const count = data.templates.filter((template) => template.category === category.id).length;
-      const isActive = category.id === selectedCategory;
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = isActive ? "active" : "";
-      button.setAttribute("role", "tab");
-      button.setAttribute("aria-selected", String(isActive));
-      button.setAttribute("aria-label", `${category.name} (${count} modèles)`);
-      button.innerHTML = `<span>${escapeHtml(category.name)}</span><strong>${count}</strong>`;
-      button.addEventListener("click", () => {
-        selectedCategory = category.id;
-        renderCategoryTabs();
-        renderTemplateList();
-      });
-      els.categoryTabs.appendChild(button);
+    data.categories.forEach((cat) => {
+      const count = data.templates.filter((t) => t.category === cat.id).length;
+      const active = cat.id === selectedCategory;
+      const btn = document.createElement("button"); btn.type = "button"; btn.className = active ? "active" : "";
+      btn.setAttribute("role","tab"); btn.setAttribute("aria-selected", String(active)); btn.setAttribute("aria-label", `${cat.name} (${count} modèles)`);
+      btn.innerHTML = `<span>${escapeHtml(cat.name)}</span><strong>${count}</strong>`;
+      btn.addEventListener("click", () => { selectedCategory = cat.id; renderCategoryTabs(); renderTemplateList(); });
+      els.categoryTabs.appendChild(btn);
     });
   }
 
   function renderTemplateList() {
     renderCategoryTabs();
-    const templates = data.templates.filter((template) => {
-      const inCategory = template.category === selectedCategory;
-      const text = `${template.name} ${template.description}`.toLowerCase();
-      return inCategory && (!searchTerm || text.includes(searchTerm));
-    });
-
+    const templates = data.templates.filter((t) => t.category === selectedCategory && (!searchTerm || `${t.name} ${t.description}`.toLowerCase().includes(searchTerm)));
     els.templateCount.textContent = String(templates.length);
     els.templateGrid.innerHTML = "";
-
-    if (!templates.length) {
-      const empty = document.createElement("p");
-      empty.className = "preview-meta";
-      empty.textContent = "Aucun modèle trouvé.";
-      els.templateGrid.appendChild(empty);
-      return;
-    }
-
-    templates.forEach((template) => {
-      const isActive = template.id === state.templateId;
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = `template-card${isActive ? " active" : ""}`;
-      button.dataset.templateId = template.id;
-      button.setAttribute("aria-pressed", String(isActive));
-      button.setAttribute("aria-label", `${template.name}, ${template.description}`);
-      button.innerHTML = `<strong>${escapeHtml(template.name)}</strong><span>${escapeHtml(template.description)}</span>`;
-      button.addEventListener("click", () => selectTemplate(template.id));
-      els.templateGrid.appendChild(button);
+    if (!templates.length) { const p = document.createElement("p"); p.className = "preview-meta"; p.textContent = "Aucun modèle trouvé."; els.templateGrid.appendChild(p); return; }
+    templates.forEach((t) => {
+      const active = t.id === state.templateId;
+      const btn = document.createElement("button"); btn.type = "button"; btn.className = `template-card${active ? " active" : ""}`;
+      btn.dataset.templateId = t.id; btn.setAttribute("aria-pressed", String(active)); btn.setAttribute("aria-label", `${t.name}, ${t.description}`);
+      btn.innerHTML = `<strong>${escapeHtml(t.name)}</strong><span>${escapeHtml(t.description)}</span>`;
+      btn.addEventListener("click", () => selectTemplate(t.id));
+      els.templateGrid.appendChild(btn);
     });
   }
 
   function selectTemplate(templateId, restoredState) {
-    const template = getTemplate(templateId);
-    state.templateId = template.id;
-    state.formatId = restoredState?.formatId || template.defaultFormat || data.formats[0].id;
-    state.fields = restoredState?.fields || Object.fromEntries(template.fields.map((item) => [item.key, item.value]));
-    state.imageSrc = restoredState?.imageSrc || template.defaultImage || data.media[0].src;
-    state.homeLogoSrc = restoredState?.homeLogoSrc || "";
-    state.awayLogoSrc = restoredState?.awayLogoSrc || "";
-    state.partnerLogoSrc = restoredState?.partnerLogoSrc || "";
-    state.iconId = restoredState?.iconId || template.defaultIcon || data.icons[0].id;
-    if (restoredState?.brand) {
-      state.brand = { ...data.brandDefaults, ...restoredState.brand };
-      applyBrandToUi();
-    }
-
-    // If no explicit restored state provided, attempt to load a local draft for this template
+    const tmpl = getTemplate(templateId);
+    state.templateId      = tmpl.id;
+    state.formatId        = restoredState?.formatId    || tmpl.defaultFormat || data.formats[0].id;
+    state.fields          = restoredState?.fields      || Object.fromEntries(tmpl.fields.map((f) => [f.key, f.value]));
+    state.imageSrc        = restoredState?.imageSrc    || tmpl.defaultImage  || data.media[0].src;
+    state.homeLogoSrc     = restoredState?.homeLogoSrc || "";
+    state.awayLogoSrc     = restoredState?.awayLogoSrc || "";
+    state.partnerLogoSrc  = restoredState?.partnerLogoSrc || "";
+    state.iconId          = restoredState?.iconId      || tmpl.defaultIcon   || data.icons[0].id;
+    if (restoredState?.brand) { state.brand = { ...data.brandDefaults, ...restoredState.brand }; applyBrandToUi(); }
     if (!restoredState) {
       try {
-        const drafts = readJson(DRAFT_KEY, {});
-        const draft = drafts[template.id];
+        const draft = (readJson(DRAFT_KEY, {}))[tmpl.id];
         if (draft) {
-          state.fields = { ...Object.fromEntries(template.fields.map((item) => [item.key, item.value])), ...draft.fields };
-          state.imageSrc = draft.imageSrc || state.imageSrc;
-          state.homeLogoSrc = draft.homeLogoSrc || state.homeLogoSrc;
-          state.awayLogoSrc = draft.awayLogoSrc || state.awayLogoSrc;
-          state.partnerLogoSrc = draft.partnerLogoSrc || state.partnerLogoSrc;
-          state.formatId = draft.formatId || state.formatId;
-          state.iconId = draft.iconId || state.iconId;
-          state.brand = { ...state.brand, ...(draft.brand || {}) };
+          state.fields          = { ...Object.fromEntries(tmpl.fields.map((f) => [f.key, f.value])), ...draft.fields };
+          state.imageSrc        = draft.imageSrc        || state.imageSrc;
+          state.homeLogoSrc     = draft.homeLogoSrc     || state.homeLogoSrc;
+          state.awayLogoSrc     = draft.awayLogoSrc     || state.awayLogoSrc;
+          state.partnerLogoSrc  = draft.partnerLogoSrc  || state.partnerLogoSrc;
+          state.formatId        = draft.formatId        || state.formatId;
+          state.iconId          = draft.iconId          || state.iconId;
+          state.brand           = { ...state.brand, ...(draft.brand || {}) };
           setStatus("Brouillon restauré");
         }
-      } catch (error) {
-        console.warn(error);
-      }
+      } catch(e) { console.warn(e); }
     }
-
-    selectedCategory = template.category;
+    selectedCategory = tmpl.category;
     els.formatSelect.value = state.formatId;
-    els.currentTemplateName.textContent = template.name;
-    els.currentCategory.textContent = getCategory(template.category).name;
-
-    renderTemplateList();
-    renderFieldEditor();
-    renderMediaBank();
-    renderIconBank();
-    requestRender();
+    els.currentTemplateName.textContent = tmpl.name;
+    els.currentCategory.textContent = getCategory(tmpl.category).name;
+    renderTemplateList(); renderFieldEditor(); renderMediaBank(); renderIconBank(); requestRender();
   }
 
   function renderFieldEditor() {
-    const template = getTemplate(state.templateId);
-    els.fieldEditor.innerHTML = "";
-    template.fields.forEach((item) => {
-      const label = document.createElement("label");
-      label.textContent = item.label;
+    const tmpl = getTemplate(state.templateId); els.fieldEditor.innerHTML = "";
+    tmpl.fields.forEach((item) => {
+      const label = document.createElement("label"); label.textContent = item.label;
       const input = document.createElement(item.type === "textarea" ? "textarea" : "input");
-      input.id = `field-${item.key}`;
-      input.dataset.key = item.key;
-      const limits = fieldUiLimits(item);
-      input.value = state.fields[item.key] || "";
-      input.placeholder = item.value || "";
-      input.maxLength = limits.maxLength;
-      if (input.tagName === "TEXTAREA") {
-        input.rows = limits.rows;
-        input.style.minHeight = `${limits.rows * 28}px`;
-      }
-      input.addEventListener("input", (e) => {
-        const k = e.target.dataset.key || item.key;
-        state.fields[k] = e.target.value;
-        requestRender();
-        saveDraftDebounced();
-      });
-      label.appendChild(input);
-      els.fieldEditor.appendChild(label);
+      input.id = `field-${item.key}`; input.dataset.key = item.key;
+      const lim = fieldUiLimits(item);
+      input.value = state.fields[item.key] || ""; input.placeholder = item.value || ""; input.maxLength = lim.maxLength;
+      if (input.tagName === "TEXTAREA") { input.rows = lim.rows; input.style.minHeight = `${lim.rows * 28}px`; }
+      input.addEventListener("input", (e) => { state.fields[e.target.dataset.key || item.key] = e.target.value; requestRender(); saveDraftDebounced(); });
+      label.appendChild(input); els.fieldEditor.appendChild(label);
     });
   }
 
   function fieldUiLimits(item) {
-    const key = item.key.toLowerCase();
-    if (key === "items") return { maxLength: 900, rows: 8 };
-    if (["details", "quote"].includes(key)) return { maxLength: 420, rows: 5 };
-    if (["title", "subtitle", "competition"].includes(key)) return { maxLength: 90, rows: 2 };
+    const k = item.key.toLowerCase();
+    if (k === "items") return { maxLength: 900, rows: 8 };
+    if (["details","quote"].includes(k)) return { maxLength: 420, rows: 5 };
+    if (["title","subtitle","competition"].includes(k)) return { maxLength: 90, rows: 2 };
     return { maxLength: 140, rows: 3 };
   }
 
   function renderMediaBank() {
     els.mediaBank.innerHTML = "";
-    data.media.forEach((media) => {
-      const isActive = state.imageSrc === media.src;
-      const button = document.createElement("button");
-      button.type = "button";
-      button.title = media.name;
-      button.className = isActive ? "active" : "";
-      button.setAttribute("aria-pressed", String(isActive));
-      button.setAttribute("aria-label", `Image : ${media.name}`);
-      const img = document.createElement("img");
-      img.src = media.src;
-      img.alt = media.name;
-      button.appendChild(img);
-      button.addEventListener("click", () => {
-        state.imageSrc = media.src;
-        renderMediaBank();
-        requestRender();
-      });
-      els.mediaBank.appendChild(button);
+    data.media.forEach((m) => {
+      const active = state.imageSrc === m.src; const btn = document.createElement("button"); btn.type = "button"; btn.title = m.name; btn.className = active ? "active" : "";
+      btn.setAttribute("aria-pressed", String(active)); btn.setAttribute("aria-label", `Image : ${m.name}`);
+      const img = document.createElement("img"); img.src = m.src; img.alt = m.name; btn.appendChild(img);
+      btn.addEventListener("click", () => { state.imageSrc = m.src; renderMediaBank(); requestRender(); });
+      els.mediaBank.appendChild(btn);
     });
   }
 
   function renderIconBank() {
     els.iconBank.innerHTML = "";
-    data.icons.forEach((icon) => {
-      const isActive = state.iconId === icon.id;
-      const button = document.createElement("button");
-      button.type = "button";
-      button.title = icon.name;
-      button.className = isActive ? "active" : "";
-      button.setAttribute("aria-pressed", String(isActive));
-      button.setAttribute("aria-label", `Icône : ${icon.name}`);
-      const img = document.createElement("img");
-      img.src = icon.src;
-      img.alt = icon.name;
-      button.appendChild(img);
-      button.addEventListener("click", () => {
-        state.iconId = icon.id;
-        renderIconBank();
-        requestRender();
-      });
-      els.iconBank.appendChild(button);
+    data.icons.forEach((ic) => {
+      const active = state.iconId === ic.id; const btn = document.createElement("button"); btn.type = "button"; btn.title = ic.name; btn.className = active ? "active" : "";
+      btn.setAttribute("aria-pressed", String(active)); btn.setAttribute("aria-label", `Icône : ${ic.name}`);
+      const img = document.createElement("img"); img.src = ic.src; img.alt = ic.name; btn.appendChild(img);
+      btn.addEventListener("click", () => { state.iconId = ic.id; renderIconBank(); requestRender(); });
+      els.iconBank.appendChild(btn);
     });
   }
 
+  // ── BRAND ───────────────────────────────────────────────────
   function handleUpload(file, target) {
     if (!file || !file.type.startsWith("image/")) return;
     const reader = new FileReader();
     reader.onload = () => {
-      if (target === "partner") {
-        state.partnerLogoSrc = reader.result;
-      } else if (target === "homeLogo") {
-        state.homeLogoSrc = reader.result;
-      } else if (target === "awayLogo") {
-        state.awayLogoSrc = reader.result;
-      } else {
-        state.imageSrc = reader.result;
-        renderMediaBank();
-      }
-      requestRender();
-      setStatus("Image chargée");
-      saveDraftDebounced();
+      if      (target === "partner")  state.partnerLogoSrc = reader.result;
+      else if (target === "homeLogo") state.homeLogoSrc    = reader.result;
+      else if (target === "awayLogo") state.awayLogoSrc    = reader.result;
+      else { state.imageSrc = reader.result; renderMediaBank(); }
+      requestRender(); setStatus("Image chargée"); saveDraftDebounced();
     };
     reader.readAsDataURL(file);
   }
 
   function applyBrandToUi() {
     const root = document.documentElement;
-    root.style.setProperty("--red", state.brand.red);
+    root.style.setProperty("--red",  state.brand.red);
     root.style.setProperty("--blue", state.brand.blue);
     root.style.setProperty("--gold", state.brand.gold);
-    els.brandRed.value = state.brand.red;
-    els.brandBlue.value = state.brand.blue;
-    els.brandGold.value = state.brand.gold;
-    els.brandDark.value = state.brand.dark;
-    els.brandTitleFont.value = state.brand.titleFont;
-    els.brandBodyFont.value = state.brand.bodyFont;
+    els.brandRed.value = state.brand.red; els.brandBlue.value = state.brand.blue; els.brandGold.value = state.brand.gold;
+    els.brandDark.value = state.brand.dark; els.brandTitleFont.value = state.brand.titleFont; els.brandBodyFont.value = state.brand.bodyFont;
   }
 
   function updateBrandFromControls() {
-    state.brand = {
-      ...state.brand,
-      red: els.brandRed.value,
-      blue: els.brandBlue.value,
-      gold: els.brandGold.value,
-      dark: els.brandDark.value,
-      titleFont: els.brandTitleFont.value.trim() || data.brandDefaults.titleFont,
-      bodyFont: els.brandBodyFont.value.trim() || data.brandDefaults.bodyFont,
-    };
-    try {
-      localStorage.setItem(BRAND_KEY, JSON.stringify(state.brand));
-    } catch (error) {
-      console.warn(error);
-      setStatus("Identité non sauvegardée (stockage indisponible)");
-    }
-    applyBrandToUi();
-    requestRender();
-    saveDraftDebounced();
+    state.brand = { ...state.brand, red: els.brandRed.value, blue: els.brandBlue.value, gold: els.brandGold.value, dark: els.brandDark.value, titleFont: els.brandTitleFont.value.trim() || data.brandDefaults.titleFont, bodyFont: els.brandBodyFont.value.trim() || data.brandDefaults.bodyFont };
+    try { localStorage.setItem(BRAND_KEY, JSON.stringify(state.brand)); } catch(e) { console.warn(e); }
+    applyBrandToUi(); requestRender(); saveDraftDebounced();
   }
 
-  function resetCurrentTemplate() {
-    selectTemplate(state.templateId);
-    setStatus("Mod\u00e8le r\u00e9initialis\u00e9");
-  }
-
+  // ── SAVE / LOAD ─────────────────────────────────────────────
   function saveCurrentDesign() {
-    const saved = readJson(STORAGE_KEY, []);
-    const template = getTemplate(state.templateId);
-    const item = {
-      id: `${Date.now()}`,
-      label: template.name,
-      savedAt: new Date().toLocaleString("fr-FR"),
-      templateId: state.templateId,
-      formatId: state.formatId,
-      fields: { ...state.fields },
-      imageSrc: state.imageSrc,
-      homeLogoSrc: state.homeLogoSrc,
-      awayLogoSrc: state.awayLogoSrc,
-      partnerLogoSrc: state.partnerLogoSrc,
-      iconId: state.iconId,
-      brand: { ...state.brand },
-    };
-
-    try {
-      saved.unshift(item);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.slice(0, 15)));
-      renderSavedList();
-      setStatus("Design enregistré");
-    } catch (error) {
-      console.error(error);
-      setStatus("Sauvegarde trop lourde");
-    }
+    const saved = readJson(STORAGE_KEY, []); const tmpl = getTemplate(state.templateId);
+    const item = { id: `${Date.now()}`, label: tmpl.name, savedAt: new Date().toLocaleString("fr-FR"), templateId: state.templateId, formatId: state.formatId, fields: { ...state.fields }, imageSrc: state.imageSrc, homeLogoSrc: state.homeLogoSrc, awayLogoSrc: state.awayLogoSrc, partnerLogoSrc: state.partnerLogoSrc, iconId: state.iconId, brand: { ...state.brand } };
+    try { saved.unshift(item); localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.slice(0, 15))); renderSavedList(); setStatus("Design enregistré"); } catch(e) { console.error(e); setStatus("Sauvegarde trop lourde"); }
   }
 
   function renderSavedList() {
-    const saved = readJson(STORAGE_KEY, []);
-    els.savedList.innerHTML = "";
-    if (!saved.length) {
-      const empty = document.createElement("small");
-      empty.textContent = "Aucune sauvegarde locale.";
-      els.savedList.appendChild(empty);
-      return;
-    }
-
+    const saved = readJson(STORAGE_KEY, []); els.savedList.innerHTML = "";
+    if (!saved.length) { const s = document.createElement("small"); s.textContent = "Aucune sauvegarde locale."; els.savedList.appendChild(s); return; }
     saved.forEach((item) => {
-      const row = document.createElement("div");
-      row.className = "saved-item";
-      row.style.gridTemplateColumns = "1fr auto auto";
+      const row = document.createElement("div"); row.className = "saved-item"; row.style.gridTemplateColumns = "1fr auto auto";
       row.innerHTML = `<div><strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.savedAt)}</small></div>`;
-      const load = document.createElement("button");
-      load.type = "button";
-      load.title = "Charger";
-      load.textContent = "↺";
-      load.addEventListener("click", () => selectTemplate(item.templateId, item));
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.title = "Supprimer cette sauvegarde";
-      remove.setAttribute("aria-label", "Supprimer cette sauvegarde");
-      remove.textContent = "\u00d7";
-      remove.addEventListener("click", () => deleteSavedDesign(item.id));
-      row.appendChild(load);
-      row.appendChild(remove);
-      els.savedList.appendChild(row);
+      const load = document.createElement("button"); load.type = "button"; load.title = "Charger"; load.textContent = "↺"; load.addEventListener("click", () => selectTemplate(item.templateId, item));
+      const del = document.createElement("button"); del.type = "button"; del.title = "Supprimer"; del.setAttribute("aria-label","Supprimer cette sauvegarde"); del.textContent = "×"; del.addEventListener("click", () => deleteSavedDesign(item.id));
+      row.appendChild(load); row.appendChild(del); els.savedList.appendChild(row);
     });
   }
 
   function deleteSavedDesign(id) {
     const saved = readJson(STORAGE_KEY, []);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.filter((item) => item.id !== id)));
-      setStatus("Sauvegarde supprimée");
-    } catch (error) {
-      console.warn(error);
-      setStatus("Suppression impossible (stockage indisponible)");
-    }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.filter((i) => i.id !== id))); setStatus("Sauvegarde supprimée"); } catch(e) { console.warn(e); }
     renderSavedList();
   }
 
-  function requestRender() {
-    cancelAnimationFrame(renderFrame);
-    renderFrame = requestAnimationFrame(renderCurrent);
-  }
+  // ── RENDER PIPELINE ─────────────────────────────────────────
+  function requestRender() { cancelAnimationFrame(renderFrame); renderFrame = requestAnimationFrame(renderCurrent); }
 
   async function renderCurrent() {
     const version = ++renderVersion;
-    const template = getTemplate(state.templateId);
+    const tmpl   = getTemplate(state.templateId);
     const format = getFormat(state.formatId);
-    const icon = data.icons.find((item) => item.id === state.iconId) || data.icons[0];
-    const gallerySources = template.layout === "gallery" ? data.media.slice(0, 5).map((item) => item.src) : [];
-
-    canvas.width = format.width;
-    canvas.height = format.height;
+    const icon   = data.icons.find((i) => i.id === state.iconId) || data.icons[0];
+    const gallerySrcs = tmpl.layout === "gallery" ? data.media.slice(0, 5).map((m) => m.src) : [];
+    canvas.width = format.width; canvas.height = format.height;
     els.formatMeta.textContent = `${format.width} × ${format.height} px`;
-    setStatus("Rendu...");
-
-    const [photo, logo, iconImage, homeLogo, awayLogo, partnerLogo, ...gallery] = await Promise.all([
-      loadImage(state.imageSrc),
-      loadImage(LOGO_SRC),
-      loadImage(icon.src),
-      state.homeLogoSrc ? loadImage(state.homeLogoSrc) : Promise.resolve(null),
-      state.awayLogoSrc ? loadImage(state.awayLogoSrc) : Promise.resolve(null),
+    setStatus("Rendu…");
+    const [photo, logo, iconImg, homeLogo, awayLogo, partnerLogo, ...gallery] = await Promise.all([
+      loadImage(state.imageSrc), loadImage(LOGO_SRC), loadImage(icon.src),
+      state.homeLogoSrc    ? loadImage(state.homeLogoSrc)    : Promise.resolve(null),
+      state.awayLogoSrc    ? loadImage(state.awayLogoSrc)    : Promise.resolve(null),
       state.partnerLogoSrc ? loadImage(state.partnerLogoSrc) : Promise.resolve(null),
-      ...gallerySources.map(loadImage),
+      ...gallerySrcs.map(loadImage),
     ]);
-
     if (version !== renderVersion) return;
-
-    renderDesign({
-      template,
-      format,
-      photo,
-      logo,
-      icon: iconImage,
-      homeLogo,
-      awayLogo,
-      partnerLogo,
-      gallery: gallery.filter(Boolean),
-    });
-
+    renderDesign({ tmpl, format, photo, logo, icon: iconImg, homeLogo, awayLogo, partnerLogo, gallery: gallery.filter(Boolean) });
     setStatus("Aperçu à jour");
   }
 
   function renderDesign(assets) {
-    const { template, format } = assets;
+    const { tmpl, format } = assets;
     ctx.clearRect(0, 0, format.width, format.height);
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
-
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
     const renderers = {
-      match: renderMatch,
-      "match-vs": renderMatchVs,
-      result: renderResult,
-      list: renderList,
-      table: renderTable,
-      roster: renderRoster,
-      event: renderEvent,
-      "convivial-event": renderConvialEvent,
-      portrait: renderPortrait,
-      transfer: renderTransfer,
-      sponsor: renderSponsor,
-      info: renderInfo,
-      gallery: renderGallery,
-      quote: renderQuote,
-      celebration: renderCelebration,
-      recruitment: renderRecruitment,
+      "match"           : renderMatch,       "match-vs"  : renderMatchVs,
+      "result"          : renderResult,      "list"      : renderList,
+      "table"           : renderTable,       "roster"    : renderRoster,
+      "event"           : renderEvent,       "convivial-event": renderConvivialEvent,
+      "portrait"        : renderPortrait,    "transfer"  : renderTransfer,
+      "sponsor"         : renderSponsor,     "info"      : renderInfo,
+      "gallery"         : renderGallery,     "quote"     : renderQuote,
+      "celebration"     : renderCelebration, "recruitment": renderRecruitment,
     };
-
-    const renderer = renderers[template.layout] || renderInfo;
-    renderer(assets);
-    if (assets.partnerLogo && template.layout !== "sponsor" && template.layout !== "match") {
-      drawPartnerBadge(assets.partnerLogo, format.width, format.height, unit(format.width, format.height));
-    }
+    (renderers[tmpl.layout] || renderInfo)(assets);
+    if (assets.partnerLogo && tmpl.layout !== "sponsor") drawPartnerBadge(assets.partnerLogo, format.width, format.height, unit(format.width, format.height));
   }
 
-  function ensureTextBelowIcon(requestedY, iconY, iconSize, gap = 30) {
-    return Math.max(requestedY, iconY + iconSize + gap);
+
+  // ═══════════════════════════════════════════════════════════
+  //  PRIMITIVES PARTAGÉES
+  // ═══════════════════════════════════════════════════════════
+
+  function drawBg(photo, w, h, overlayAlpha) {
+    drawCover(photo, 0, 0, w, h, state.brand.dark);
+    if (overlayAlpha > 0) drawOverlay(0, 0, w, h, `rgba(0,0,0,${overlayAlpha})`);
   }
 
-  
-  
-  
-  function renderMatch({ format, photo, logo, icon, homeLogo, awayLogo, partnerLogo }) {
-    const { width: w, height: h } = format;
-    const b = state.brand;
+  function drawDiagonalSplit(w, h, leftColor, rightColor, topRatio, splitRatio, angle) {
+    const sy = h * topRatio, sx = w * splitRatio, diag = angle != null ? angle : 80;
+    ctx.fillStyle = leftColor;
+    ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(sx - diag, sy); ctx.lineTo(sx + diag, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = rightColor;
+    ctx.beginPath(); ctx.moveTo(sx - diag, sy); ctx.lineTo(w, sy); ctx.lineTo(w, h); ctx.lineTo(sx + diag, h); ctx.closePath(); ctx.fill();
+  }
+
+  function drawHeader(icon, logo, w, h) {
     const u = unit(w, h);
-    const portrait = h > w;
-    drawCover(photo, 0, 0, w, h, b.dark);
-    drawOverlay(0, 0, w, h, "rgba(0,0,0,0.24)");
-    drawBottomFade(w, h, 0.7);
+    drawIconBadge(icon, 44 * u, 38 * u, 76 * u, "#ffffff", state.brand.red);
+    drawLogo(logo, w - 136 * u, 34 * u, 100 * u);
+  }
 
-    // Red panel (left side) - diagonal from left-center to bottom
-    ctx.fillStyle = rgba(b.red, 0.9);
-    ctx.beginPath();
-    ctx.moveTo(0, h * 0.58);
-    ctx.lineTo(w * 0.42, h * 0.5);
-    ctx.lineTo(w * 0.5, h);
-    ctx.lineTo(0, h);
-    ctx.closePath();
-    ctx.fill();
+  function drawCompPill(value, x, y, maxW, h) {
+    drawPill(value, x, y, Math.min(maxW, 480 * unit(canvas.width, canvas.height)), h, state.brand.red, "#ffffff");
+  }
 
-    // Blue panel (right side) - diagonal from bottom to right-center
-    ctx.fillStyle = rgba(b.blue, 0.86);
-    ctx.beginPath();
-    ctx.moveTo(w * 0.5, h);
-    ctx.lineTo(w, h * 0.73);
-    ctx.lineTo(w, h);
-    ctx.closePath();
-    ctx.fill();
+  function drawFooterBand(lineArr, w, h, color) {
+    const u = unit(w, h), b = state.brand;
+    const bandH = 130 * u, y = h - bandH;
+    ctx.fillStyle = color || b.red; ctx.fillRect(0, y, w, bandH);
+    ctx.fillStyle = b.gold; ctx.fillRect(0, y, w, Math.max(3, 5 * u));
+    const main = lineArr[0] || "", sub = lineArr[1] || "";
+    if (main) drawFitText(main.toUpperCase(), 52 * u, y + bandH * 0.52, w - 104 * u, { size: bandH * 0.34, min: 18 * u, color: "#ffffff", weight: 900, align: "center", family: b.accentFont, clip: false });
+    if (sub)  drawFitText(sub, 52 * u, y + bandH * 0.82, w - 104 * u, { size: bandH * 0.24, min: 14 * u, color: "rgba(255,255,255,0.82)", weight: 700, align: "center", family: b.bodyFont, clip: false });
+  }
 
-    // No calendar icon - removed as requested
-    // Club logo in top-right - draw without white background (transparent PNG)
-    if (logo) {
-      const logoSize = 100 * u;
-      const logoX = w - logoSize - 40 * u;
-      const logoY = 34 * u;
-      drawContain(logo, logoX, logoY, logoSize, logoSize);
-    }
-
-    // Title and competition pill - positioned on left side
-    const titleX = 48 * u;
-    const titleWidth = w * 0.52;
-    drawFitText(text("title").toUpperCase(), titleX, 170 * u, titleWidth, {
-      size: portrait ? 92 * u : 70 * u,
-      min: 44 * u,
-      maxHeight: 104 * u,
-      color: b.white,
-      weight: 900,
-      stroke: b.red,
-    });
-
-    drawPill(text("competition"), titleX, 226 * u, Math.min(360 * u, w * 0.45), 42 * u, b.red, b.white);
-
-    // Team logos and names in the bottom panels
-    const panelTop = portrait ? h * 0.58 : h * 0.56;
-    const logoSize = portrait ? 140 * u : 120 * u;
-    const teamNameSize = portrait ? 42 * u : 36 * u;
-
-    // Left panel (red) - ES DOUBS logo
-    const leftPanelCenterX = w * 0.22;
-    const leftLogoX = leftPanelCenterX - logoSize / 2;
-    const leftLogoY = panelTop + 25 * u;
-
-    if (homeLogo) {
-      ctx.save();
-      ctx.shadowColor = "rgba(255,255,255,0.3)";
-      ctx.shadowBlur = 20 * u;
-      drawContain(homeLogo, leftLogoX, leftLogoY, logoSize, logoSize);
-      ctx.restore();
-    } else {
-      ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,0.25)";
-      ctx.font = "bold " + Math.round(40 * u) + "px " + b.titleFont;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("?", leftPanelCenterX, leftLogoY + logoSize / 2);
-      ctx.restore();
-    }
-
-    // ES DOUBS team name below logo
-    drawWrappedText(text("homeTeam").toUpperCase(), leftPanelCenterX - w * 0.18, leftLogoY + logoSize + teamNameSize * 0.6, w * 0.36, {
-      size: teamNameSize,
-      min: 24 * u,
-      color: b.white,
-      weight: 900,
-      align: "center",
-      lineHeight: teamNameSize * 1.1,
-      maxLines: 2,
-      maxHeight: teamNameSize * 2.3,
-      family: b.accentFont,
-    });
-
-    // Right panel (blue) - BESANCON FT logo
-    const rightPanelCenterX = w * 0.78;
-    const rightLogoX = rightPanelCenterX - logoSize / 2;
-    const rightLogoY = panelTop + 25 * u;
-
-    if (awayLogo) {
-      ctx.save();
-      ctx.shadowColor = "rgba(255,255,255,0.3)";
-      ctx.shadowBlur = 20 * u;
-      drawContain(awayLogo, rightLogoX, rightLogoY, logoSize, logoSize);
-      ctx.restore();
-    } else {
-      ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,0.25)";
-      ctx.font = "bold " + Math.round(40 * u) + "px " + b.titleFont;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("?", rightPanelCenterX, rightLogoY + logoSize / 2);
-      ctx.restore();
-    }
-
-    // BESANCON FT team name below logo
-    drawWrappedText(text("awayTeam").toUpperCase(), rightPanelCenterX - w * 0.18, rightLogoY + logoSize + teamNameSize * 0.6, w * 0.36, {
-      size: teamNameSize,
-      min: 24 * u,
-      color: b.white,
-      weight: 900,
-      align: "center",
-      lineHeight: teamNameSize * 1.1,
-      maxLines: 2,
-      maxHeight: teamNameSize * 2.3,
-      family: b.accentFont,
-    });
-
-    // Large golden "VS" with strong shadow for readability
-    const vsY = panelTop + logoSize * 0.45 + 10 * u;
+  function drawVsBrush(cx, cy, w, h) {
+    const u = unit(w, h), b = state.brand;
+    const size = (Math.min(w, h) > 900 ? 200 : 160) * u;
     ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.6)";
-    ctx.shadowBlur = 15 * u;
-    ctx.shadowOffsetX = 3 * u;
-    ctx.shadowOffsetY = 3 * u;
-    drawFitText("VS", w * 0.5, vsY, 200 * u, {
-      size: portrait ? 170 * u : 140 * u,
-      min: 90 * u,
-      color: b.gold,
-      weight: 900,
-      align: "center",
-      stroke: rgba(b.dark, 0.5),
-      strokeWidth: Math.max(4, 5 * u),
-      clip: false,
-    });
+    ctx.shadowColor = "rgba(0,0,0,0.55)"; ctx.shadowBlur = 28 * u; ctx.shadowOffsetY = 6 * u;
+    ctx.font = `900 ${Math.round(size)}px ${b.accentFont}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.lineJoin = "round"; ctx.lineWidth = Math.max(6, 10 * u); ctx.strokeStyle = rgba(b.dark, 0.7); ctx.strokeText("VS", cx, cy);
+    const stops = [b.goldLight || "#f7e7ad", b.gold, b.goldDeep || "#a9781f"];
+    const grad = ctx.createLinearGradient(cx - size * 0.5, cy - size * 0.5, cx + size * 0.5, cy + size * 0.5);
+    stops.forEach((c, i) => grad.addColorStop(i / (stops.length - 1), c));
+    ctx.fillStyle = grad; ctx.fillText("VS", cx, cy);
     ctx.restore();
+  }
 
-    // Footer band : lieu | date | heure
-    const footerH = portrait ? 130 * u : 115 * u;
-    const footerY = h - footerH;
-    ctx.save();
-    ctx.fillStyle = blockGradient(0, footerY, w, footerH, rgba(b.dark, 0.95), rgba(b.dark, 0.75));
-    ctx.fillRect(0, footerY, w, footerH);
-    ctx.fillStyle = b.gold;
-    ctx.fillRect(0, footerY, w, Math.max(4, 6 * u));
+
+  // ═══════════════════════════════════════════════════════════
+  //  RENDERERS
+  // ═══════════════════════════════════════════════════════════
+
+  function renderMatch({ format, photo, logo, icon, homeLogo, awayLogo }) {
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
+    drawBg(photo, w, h, 0.18);
+    drawDiagonalSplit(w, h, rgba(b.red, 0.93), rgba(b.blue, 0.88), portrait ? 0.52 : 0.48, 0.5, 90 * u);
+    drawBottomFade(w, h, 0.5);
+    drawHeader(icon, logo, w, h);
+    const titleX = 48 * u, titleW = w * 0.58;
+    drawFitText(text("title").toUpperCase(), titleX, 172 * u, titleW, { size: portrait ? 96 * u : 72 * u, min: 44 * u, maxHeight: 112 * u, color: "#fff", weight: 900, stroke: rgba(b.dark, 0.4) });
+    drawCompPill(text("competition"), titleX, 224 * u, titleW, 46 * u);
+    const panelY = portrait ? h * 0.54 : h * 0.50, logoSize = portrait ? 148 * u : 126 * u;
+    const teamSize = portrait ? 46 * u : 38 * u, teamW = w * 0.34;
+    const leftCX = w * 0.22, rightCX = w * 0.78;
+    ctx.save(); ctx.shadowColor = "rgba(255,255,255,0.22)"; ctx.shadowBlur = 20 * u;
+    if (homeLogo) drawContain(homeLogo, leftCX - logoSize / 2, panelY + 16 * u, logoSize, logoSize);
+    else { ctx.fillStyle = "rgba(255,255,255,0.18)"; roundRect(leftCX - logoSize / 2, panelY + 16 * u, logoSize, logoSize, 18 * u); ctx.fill(); }
+    if (awayLogo) drawContain(awayLogo, rightCX - logoSize / 2, panelY + 16 * u, logoSize, logoSize);
+    else { ctx.fillStyle = "rgba(255,255,255,0.18)"; roundRect(rightCX - logoSize / 2, panelY + 16 * u, logoSize, logoSize, 18 * u); ctx.fill(); }
     ctx.restore();
+    drawWrappedText(text("homeTeam").toUpperCase(), leftCX - teamW / 2,  panelY + logoSize + 20 * u + teamSize, teamW, { size: teamSize, min: 22 * u, color: "#fff", weight: 900, align: "center", lineHeight: teamSize * 1.1, maxLines: 2, family: b.accentFont });
+    drawWrappedText(text("awayTeam").toUpperCase(), rightCX - teamW / 2, panelY + logoSize + 20 * u + teamSize, teamW, { size: teamSize, min: 22 * u, color: "#fff", weight: 900, align: "center", lineHeight: teamSize * 1.1, maxLines: 2, family: b.accentFont });
+    drawVsBrush(w * 0.5, panelY + logoSize * 0.52 + 16 * u, w, h);
+    drawFooterBand([[text("date"), text("time")].filter(Boolean).join("  |  "), text("location")], w, h, b.dark + "f0");
+  }
 
-    // Partner logo (Facebook icon) inside footer - bottom-left, small, vertically centered
-    if (partnerLogo) {
-      const partnerSize = 40 * u;
-      const partnerX = 28 * u;
-      const partnerY = footerY + (footerH - partnerSize) / 2;
-      ctx.save();
-      // No background, just draw the icon directly
-      drawContain(partnerLogo, partnerX, partnerY, partnerSize, partnerSize);
-      ctx.restore();
-    }
-
-    // Footer text with larger size and Bebas Neue / accent font
-    const footerParts = [text("location"), text("date"), text("time")].filter(Boolean);
-    const footerTextX = partnerLogo ? w * 0.5 + 20 * u : w * 0.5;
-    drawFitText(footerParts.join("   |   "), footerTextX, footerY + footerH * 0.58, w - 80 * u, {
-      size: portrait ? 40 * u : 36 * u,
-      min: 22 * u,
-      color: b.white,
-      weight: 800,
-      family: b.accentFont,
-      align: "center",
-      maxHeight: footerH * 0.6,
-      clip: false,
-    });
-  }function renderMatchVs({ format, photo, logo, icon, homeLogo, awayLogo }) {
-    const { width: w, height: h } = format;
-    const b = state.brand;
-    const u = unit(w, h);
-
-    drawCover(photo, 0, 0, w, h, b.dark);
-    drawOverlay(0, 0, w, h, "rgba(0,0,0,0.3)");
-    drawBottomFade(w, h, 0.65);
-
-    drawIconBadge(icon, 46 * u, 42 * u, 74 * u, b.white, b.red);
-    drawLogo(logo, w - 150 * u, 34 * u, 112 * u);
-
-    const titleX = 80 * u;
-    const titleWidth = w - 160 * u;
-    drawFitText(text("title").toUpperCase(), titleX, 160 * u, titleWidth, {
-      size: h > w ? 84 * u : 68 * u,
-      min: 38 * u,
-      maxHeight: 110 * u,
-      color: b.white,
-      weight: 900,
-      stroke: b.red,
-    });
-    drawPill(text("competition"), titleX, 230 * u, Math.min(420 * u, titleWidth), 44 * u, b.red, b.white);
-
-    const portrait = h > w;
-    const logosStartY = portrait ? 300 * u : 280 * u;
-    const logoSize = portrait ? 200 * u : 160 * u;
-    const gap = portrait ? 80 * u : 60 * u;
-    const totalLogoWidth = logoSize * 2 + gap;
-    const leftLogoX = (w - totalLogoWidth) / 2;
-    const rightLogoX = leftLogoX + logoSize + gap;
-
-    if (homeLogo) {
-      drawContain(homeLogo, leftLogoX, logosStartY, logoSize, logoSize);
-    } else {
-      ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,0.15)";
-      roundRect(leftLogoX, logosStartY, logoSize, logoSize, 24 * u);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    if (awayLogo) {
-      drawContain(awayLogo, rightLogoX, logosStartY, logoSize, logoSize);
-    } else {
-      ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,0.15)";
-      roundRect(rightLogoX, logosStartY, logoSize, logoSize, 24 * u);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    const vsY = logosStartY + logoSize * 0.45;
-    drawFitText("VS", w * 0.5, vsY, 240 * u, {
-      size: portrait ? 200 * u : 160 * u,
-      min: 90 * u,
-      color: b.gold,
-      weight: 900,
-      align: "center",
-    });
-
-    const teamY = logosStartY + logoSize + (portrait ? 50 * u : 40 * u);
-    const teamSize = portrait ? 56 * u : 44 * u;
-    const teamWidth = logoSize * 0.85;
-
-    drawWrappedText(text("homeTeam").toUpperCase(), leftLogoX + logoSize / 2 - teamWidth / 2, teamY, teamWidth, {
-      size: teamSize,
-      min: 26 * u,
-      color: b.white,
-      weight: 900,
-      align: "center",
-      lineHeight: teamSize * 1.1,
-      maxLines: 2,
-    });
-
-    drawWrappedText(text("awayTeam").toUpperCase(), rightLogoX + logoSize / 2 - teamWidth / 2, teamY, teamWidth, {
-      size: teamSize,
-      min: 26 * u,
-      color: b.white,
-      weight: 900,
-      align: "center",
-      lineHeight: teamSize * 1.1,
-      maxLines: 2,
-    });
-
-    const footerStartY = h - (portrait ? 180 * u : 160 * u);
-    ctx.save();
-    ctx.fillStyle = "rgba(17,24,39,0.72)";
-    ctx.fillRect(0, footerStartY - 30 * u, w, h - (footerStartY - 30 * u));
+  function renderMatchVs({ format, photo, logo, icon, homeLogo, awayLogo }) {
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
+    drawBg(photo, w, h, 0.32); drawBottomFade(w, h, 0.68); drawHeader(icon, logo, w, h);
+    drawFitText(text("title").toUpperCase(), 52 * u, 172 * u, w - 104 * u, { size: portrait ? 90 * u : 72 * u, min: 40 * u, maxHeight: 108 * u, color: "#fff", weight: 900, align: "center", stroke: rgba(b.dark, 0.45) });
+    drawCompPill(text("competition"), w * 0.5 - 210 * u, 228 * u, 420 * u, 46 * u);
+    const panelY = portrait ? h * 0.47 : h * 0.43;
+    drawDiagonalSplit(w, h, rgba(b.red, 0.88), rgba(b.blue, 0.88), panelY / h, 0.5, 70 * u);
+    const logoSize = portrait ? 210 * u : 172 * u, gap = 80 * u, totalW = logoSize * 2 + gap;
+    const lx = (w - totalW) / 2, rx = lx + logoSize + gap, logoY = panelY + 24 * u;
+    ctx.save(); ctx.shadowColor = "rgba(255,255,255,0.25)"; ctx.shadowBlur = 22 * u;
+    if (homeLogo) drawContain(homeLogo, lx, logoY, logoSize, logoSize); else { ctx.fillStyle = "rgba(255,255,255,0.16)"; roundRect(lx, logoY, logoSize, logoSize, 20 * u); ctx.fill(); }
+    if (awayLogo) drawContain(awayLogo, rx, logoY, logoSize, logoSize); else { ctx.fillStyle = "rgba(255,255,255,0.16)"; roundRect(rx, logoY, logoSize, logoSize, 20 * u); ctx.fill(); }
     ctx.restore();
-
-    const dateTimeSize = portrait ? 34 * u : 30 * u;
-    const locationSize = portrait ? 28 * u : 26 * u;
-
-    drawWrappedText(`${text("date")} · ${text("time")}`, 60 * u, footerStartY + 12 * u, w - 120 * u, {
-      size: dateTimeSize,
-      min: dateTimeSize * 0.7,
-      color: b.gold,
-      weight: 800,
-      align: "center",
-      maxLines: 1,
-    });
-
-    drawWrappedText(text("location"), 60 * u, footerStartY + dateTimeSize + 32 * u, w - 120 * u, {
-      size: locationSize,
-      min: locationSize * 0.7,
-      color: b.white,
-      weight: 700,
-      family: b.bodyFont,
-      align: "center",
-      maxLines: 2,
-    });
-
-    drawFooterBrand(w, h, logo);
+    drawVsBrush(w * 0.5, logoY + logoSize * 0.5, w, h);
+    const nameY = logoY + logoSize + 12 * u, nameSize = portrait ? 52 * u : 42 * u, nameW = logoSize * 0.88;
+    drawWrappedText(text("homeTeam").toUpperCase(), lx + logoSize / 2 - nameW / 2, nameY + nameSize, nameW, { size: nameSize, min: 24 * u, color: "#fff", weight: 900, align: "center", lineHeight: nameSize * 1.1, maxLines: 2, family: b.accentFont });
+    drawWrappedText(text("awayTeam").toUpperCase(), rx + logoSize / 2 - nameW / 2, nameY + nameSize, nameW, { size: nameSize, min: 24 * u, color: "#fff", weight: 900, align: "center", lineHeight: nameSize * 1.1, maxLines: 2, family: b.accentFont });
+    drawFooterBand([[text("date"), text("time")].filter(Boolean).join("  ·  "), text("location")], w, h, b.dark + "f0");
   }
 
   function renderResult({ format, photo, logo, icon }) {
-    const { width: w, height: h } = format;
-    const b = state.brand;
-    const u = unit(w, h);
-    fill(b.blue);
-    ctx.fillStyle = b.red;
-    ctx.fillRect(0, 0, w * 0.42, h);
-    drawCover(photo, w * 0.36, 0, w * 0.64, h, b.dark);
-    drawOverlay(w * 0.36, 0, w * 0.64, h, "rgba(0,0,0,0.34)");
-    drawBottomFade(w, h, 0.45);
-    drawIconBadge(icon, 42 * u, 42 * u, 70 * u, b.white, b.blue);
-    drawLogo(logo, w - 142 * u, 36 * u, 105 * u);
-
-    drawFitText(text("title").toUpperCase(), 52 * u, 170 * u, w * 0.52, {
-      size: 88 * u,
-      min: 40 * u,
-      maxHeight: 104 * u,
-      color: b.white,
-      weight: 900,
-    });
-    drawFitText(`${text("scoreHome")} - ${text("scoreAway")}`, w * 0.5, h * 0.48, w * 0.78, {
-      size: 180 * u,
-      min: 82 * u,
-      color: b.white,
-      weight: 900,
-      align: "center",
-      stroke: b.dark,
-    });
-    drawWrappedText(`${text("homeTeam")} / ${text("awayTeam")}`, w * 0.5, h * 0.61, w * 0.78, {
-      size: 32 * u,
-      color: b.gold,
-      weight: 900,
-      align: "center",
-      maxLines: 2,
-    });
-    drawWrappedText(text("details"), 56 * u, h - 150 * u, w - 112 * u, {
-      size: 30 * u,
-      color: b.white,
-      family: b.bodyFont,
-      weight: 700,
-      lineHeight: 42 * u,
-      maxLines: 3,
-    });
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
+    drawBg(photo, w, h, 0.24);
+    drawDiagonalSplit(w, h, rgba(b.red, 0.91), rgba(b.blue, 0.85), 0.44, 0.5, 100 * u);
+    drawBottomFade(w, h, 0.4); drawHeader(icon, logo, w, h);
+    drawFitText(text("title").toUpperCase(), 50 * u, 168 * u, w * 0.56, { size: portrait ? 92 * u : 74 * u, min: 42 * u, maxHeight: 108 * u, color: "#fff", weight: 900, stroke: rgba(b.dark, 0.45) });
+    drawCompPill(text("competition"), 50 * u, 222 * u, w * 0.52, 44 * u);
+    const scoreY = h * (portrait ? 0.52 : 0.54);
+    drawFitText(`${text("scoreHome")}  –  ${text("scoreAway")}`, w * 0.5, scoreY, w * 0.82, { size: portrait ? 200 * u : 168 * u, min: 90 * u, color: "#fff", weight: 900, align: "center", stroke: rgba(b.dark, 0.5), strokeWidth: Math.max(5, 8 * u) });
+    drawFitText(`${text("homeTeam").toUpperCase()}  vs  ${text("awayTeam").toUpperCase()}`, w * 0.5, scoreY + 62 * u, w * 0.82, { size: 34 * u, min: 20 * u, color: b.gold, weight: 900, align: "center", family: b.accentFont });
+    drawWrappedText(text("details"), 54 * u, h - 152 * u, w - 108 * u, { size: 30 * u, min: 18 * u, color: "#fff", family: b.bodyFont, weight: 700, lineHeight: 44 * u, maxLines: 3 });
   }
 
-  function renderList({ format, photo, logo, icon }) {
-    const { width: w, height: h } = format;
-    const b = state.brand;
-    const u = unit(w, h);
-    fill("#f8fafc");
-    ctx.fillStyle = b.red;
-    ctx.fillRect(0, 0, 24 * u, h);
-    ctx.fillStyle = b.blue;
-    ctx.fillRect(0, h - 92 * u, w, 92 * u);
-    drawCover(photo, w * 0.58, 0, w * 0.42, h, b.blue);
-    drawOverlay(w * 0.58, 0, w * 0.42, h, "rgba(31,92,168,0.62)");
-    drawLogo(logo, w - 138 * u, 34 * u, 100 * u);
-    drawIconBadge(icon, 52 * u, 44 * u, 70 * u, b.white, b.red);
-
-    const titleY = ensureTextBelowIcon(142 * u, 52 * u, 70 * u, 30 * u);
-    drawFitText(text("title").toUpperCase(), 52 * u, titleY, w * 0.64, {
-      size: 70 * u,
-      min: 36 * u,
-      maxHeight: 82 * u,
-      color: b.dark,
-      weight: 900,
-    });
-    drawWrappedText(text("subtitle"), 54 * u, 190 * u, w * 0.58, {
-      size: 27 * u,
-      color: b.red,
-      weight: 800,
-      maxLines: 2,
-    });
-    drawPill(text("date"), 54 * u, 225 * u, Math.min(520 * u, w * 0.5), 44 * u, b.blue, b.white);
-
-    const startY = 310 * u;
-    const listAvailable = h - startY - 128 * u;
-    const rows = limitVisibleLines(lines(text("items")), Math.max(1, Math.floor(listAvailable / (46 * u))));
-    const rowH = Math.max(42 * u, Math.min(82 * u, listAvailable / Math.max(rows.length, 1)));
-    rows.forEach((row, index) => {
-      const y = startY + index * rowH;
-      ctx.fillStyle = index % 2 ? "rgba(31,92,168,0.07)" : "rgba(210,15,31,0.07)";
-      roundRect(52 * u, y, w * 0.72, rowH - 9 * u, 8 * u);
-      ctx.fill();
-      drawWrappedText(row, 78 * u, y + rowH * 0.58, w * 0.66, {
-        size: Math.min(28 * u, rowH * 0.34),
-        color: b.dark,
-        weight: 800,
-        maxLines: 1,
-      });
-    });
-    drawFooterText(text("footer"), w, h, b);
-  }
-
-  function renderTable({ format, photo, logo, icon }) {
-    const { width: w, height: h } = format;
-    const b = state.brand;
-    const u = unit(w, h);
-    fill(b.dark);
-    drawCover(photo, w * 0.5, 0, w * 0.5, h, b.dark);
-    drawOverlay(0, 0, w, h, "rgba(17,24,39,0.56)");
-    ctx.fillStyle = b.red;
-    ctx.fillRect(0, 0, w, 18 * u);
-    drawLogo(logo, w - 138 * u, 38 * u, 100 * u);
-    drawIconBadge(icon, 52 * u, 50 * u, 70 * u, b.white, b.gold);
-
-    const titleY = ensureTextBelowIcon(154 * u, 52 * u, 70 * u, 30 * u);
-    drawFitText(text("title").toUpperCase(), 52 * u, titleY, w * 0.72, {
-      size: 80 * u,
-      min: 44 * u,
-      maxHeight: 94 * u,
-      color: b.white,
-      weight: 900,
-    });
-    drawWrappedText(text("subtitle"), 54 * u, 198 * u, w * 0.68, {
-      size: 28 * u,
-      color: b.gold,
-      weight: 800,
-      maxLines: 1,
-    });
-
-    const boxX = 52 * u;
-    const boxY = 250 * u;
-    const boxW = w - 104 * u;
-    const tableAvailable = h - boxY - 130 * u;
-    const rows = limitVisibleLines(lines(text("items")), Math.max(1, Math.floor(tableAvailable / (44 * u))));
-    const rowH = Math.max(40 * u, Math.min(76 * u, tableAvailable / Math.max(rows.length, 1)));
-    rows.forEach((row, index) => {
-      const y = boxY + index * rowH;
-      ctx.fillStyle = index === 0 ? b.red : rgba(b.white, index % 2 ? 0.16 : 0.1);
-      roundRect(boxX, y, boxW, rowH - 8 * u, 6 * u);
-      ctx.fill();
-      drawWrappedText(row, boxX + 26 * u, y + rowH * 0.58, boxW - 52 * u, {
-        size: Math.min(31 * u, rowH * 0.42),
-        color: b.white,
-        weight: 900,
-        maxLines: 1,
-      });
-    });
-    drawFooterText(text("footer"), w, h, b);
-  }
 
   function renderRoster({ format, photo, logo, icon }) {
-    const { width: w, height: h } = format;
-    const b = state.brand;
-    const u = unit(w, h);
-    fill("#ffffff");
-    drawCover(photo, 0, 0, w, h, b.dark);
-    drawOverlay(0, 0, w, h, "rgba(0,0,0,0.42)");
-    ctx.fillStyle = rgba(b.red, 0.9);
-    ctx.fillRect(70 * u, 120 * u, w * 0.42, h - 265 * u);
-    ctx.fillStyle = b.white;
-    ctx.fillRect(w * 0.5, 0, w * 0.5, h);
-    drawLogo(logo, w - 165 * u, h - 230 * u, 120 * u);
-    drawIconBadge(icon, 96 * u, h - 220 * u, 74 * u, b.white, b.red);
-
-    const titleY = ensureTextBelowIcon(165 * u, 96 * u, 74 * u, 30 * u);
-    drawFitText(text("title").toUpperCase(), w * 0.53, titleY, w * 0.42, {
-      size: 86 * u,
-      min: 44 * u,
-      maxHeight: 104 * u,
-      color: b.red,
-      weight: 900,
-    });
-    drawWrappedText(text("subtitle"), w * 0.53, 218 * u, w * 0.4, {
-      size: 27 * u,
-      color: b.dark,
-      weight: 800,
-      maxLines: 2,
-    });
-    drawWrappedText(text("date"), w * 0.53, 285 * u, w * 0.4, {
-      size: 24 * u,
-      color: b.blue,
-      weight: 800,
-      maxLines: 2,
-    });
-
-    const top = 165 * u;
-    const coachY = h - 300 * u;
-    const listBottom = coachY - 48 * u;
-    const available = Math.max(60 * u, listBottom - top);
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
+    drawBg(photo, w, h, 0.28);
+    const panelW = portrait ? w * 0.54 : w * 0.46;
+    ctx.fillStyle = rgba(b.red, 0.93); ctx.fillRect(0, 0, panelW, h);
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, panelW, 130 * u);
+    ctx.fillStyle = b.gold; ctx.fillRect(0, 128 * u, panelW, Math.max(3, 5 * u));
+    drawHeader(icon, logo, w, h);
+    drawFitText(text("title").toUpperCase(), 46 * u, 92 * u, panelW - 52 * u, { size: 68 * u, min: 36 * u, maxHeight: 80 * u, color: b.red, weight: 900 });
+    drawWrappedText(text("subtitle"), 46 * u, 175 * u, panelW - 52 * u, { size: 26 * u, color: "#fff", weight: 800, maxLines: 2, family: b.accentFont });
+    drawWrappedText(text("date"),     46 * u, 214 * u, panelW - 52 * u, { size: 24 * u, color: b.gold, weight: 800, maxLines: 2, family: b.accentFont });
+    const listTop = 256 * u, coachY = h - 148 * u, available = Math.max(80 * u, coachY - listTop - 20 * u);
     const maxRows = Math.max(1, Math.floor(available / (38 * u)));
-    const names = limitVisibleLines(lines(text("items")), maxRows);
-    const rowH = available / Math.max(names.length, 1);
-    const nameSize = Math.max(20 * u, Math.min(48 * u, rowH * 0.62));
-    names.forEach((name, index) => {
-      drawFitText(name.toUpperCase(), 100 * u, top + index * rowH + nameSize, w * 0.34, {
-        size: nameSize,
-        min: 22 * u,
-        color: b.white,
-        weight: 900,
-      });
+    const nameItems = limitVisibleLines(lines(text("items")), maxRows);
+    const rowH = available / Math.max(nameItems.length, 1);
+    const nameSize = Math.max(20 * u, Math.min(42 * u, rowH * 0.58));
+    nameItems.forEach((name, i) => {
+      const ry = listTop + i * rowH;
+      if (i % 2 === 0) { ctx.fillStyle = "rgba(255,255,255,0.08)"; ctx.fillRect(0, ry, panelW, rowH - 2 * u); }
+      ctx.save(); ctx.fillStyle = rgba(b.gold, 0.7); ctx.font = `700 ${Math.round(nameSize * 0.72)}px ${b.bodyFont}`; ctx.textAlign = "right"; ctx.textBaseline = "alphabetic"; ctx.fillText(String(i + 1), 74 * u, ry + rowH * 0.72); ctx.restore();
+      drawFitText(name, 84 * u, ry + rowH * 0.72, panelW - 100 * u, { size: nameSize, min: 18 * u, color: "#fff", weight: 800, family: b.accentFont });
     });
-    drawWrappedText(`Coach : ${text("coach")}`, 92 * u, coachY, w * 0.36, {
-      size: 28 * u,
-      color: b.white,
-      weight: 800,
-      maxLines: 2,
-      maxHeight: 66 * u,
-    });
-  }
-
-  function renderEvent({ format, photo, logo, icon }) {
-    const { width: w, height: h } = format;
-    const b = state.brand;
-    const u = unit(w, h);
-    drawCover(photo, 0, 0, w, h, b.blue);
-    drawOverlay(0, 0, w, h, "rgba(0,0,0,0.22)");
-    ctx.fillStyle = rgba(b.blue, 0.9);
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(w * 0.72, 0);
-    ctx.lineTo(w * 0.5, h);
-    ctx.lineTo(0, h);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = rgba(b.red, 0.92);
-    ctx.fillRect(0, h - 160 * u, w, 160 * u);
-    drawLogo(logo, w - 145 * u, 34 * u, 108 * u);
-    drawIconBadge(icon, 52 * u, 50 * u, 78 * u, b.white, b.red);
-
-    const subtitleY = ensureTextBelowIcon(170 * u, 52 * u, 78 * u, 30 * u);
-    drawWrappedText(text("subtitle").toUpperCase(), 54 * u, subtitleY, w * 0.54, {
-      size: 26 * u,
-      color: b.gold,
-      weight: 900,
-      maxLines: 2,
-      maxHeight: 60 * u,
-    });
-    drawWrappedText(text("title").toUpperCase(), 52 * u, 265 * u, w * 0.58, {
-      size: h > w ? 78 * u : 60 * u,
-      min: 34 * u,
-      color: b.white,
-      weight: 900,
-      lineHeight: (h > w ? 82 : 64) * u,
-      maxLines: 4,
-      maxHeight: 270 * u,
-    });
-    drawWrappedText(text("details"), 56 * u, h - 320 * u, w * 0.58, {
-      size: 27 * u,
-      min: 18 * u,
-      color: b.white,
-      family: b.bodyFont,
-      weight: 700,
-      lineHeight: 38 * u,
-      maxLines: 4,
-      maxHeight: 150 * u,
-    });
-    drawPill(`${text("date")} · ${text("location")}`, 52 * u, h - 118 * u, w - 104 * u, 62 * u, b.white, b.red);
-  }
-
-  // Soirée conviviale : titre dégradé, ruban, pill footer.
-  function renderConvialEvent({ format, photo, logo, icon }) {
-    const { width: w, height: h } = format;
-    const b = state.brand;
-    const u = unit(w, h);
-    const portrait = h > w;
-
-    drawCover(photo, 0, 0, w, h, b.blue);
-    drawOverlay(0, 0, w, h, "rgba(0,0,0,0.26)");
-
-    // Voile bleu dégradé en haut pour la lisibilité des titres
-    ctx.fillStyle = blockGradient(0, 0, w, h * 0.6, rgba(b.blue, 0.9), rgba(b.blue, 0.08));
-    ctx.fillRect(0, 0, w, h * 0.6);
-    drawBottomFade(w, h, 0.5);
-
-    // En-tête : badge + BIENVENUE, logo à droite
-    const badge = 72 * u;
-    drawIconBadge(icon, 46 * u, 44 * u, badge, b.white, b.red);
-    drawSpacedText("BIENVENUE", 46 * u + badge + 24 * u, 44 * u + badge * 0.66, {
-      size: 40 * u,
-      weight: 700,
-      color: b.white,
-      family: b.accentFont,
-      spacing: 4 * u,
-    });
-    drawLogo(logo, w - 150 * u, 40 * u, 108 * u);
-
-    // Sur-titre doré
-    const eyebrowY = 44 * u + badge + 70 * u;
-    drawWrappedText(text("subtitle").toUpperCase(), 52 * u, eyebrowY, w * 0.78, {
-      size: 30 * u,
-      min: 20 * u,
-      color: b.gold,
-      weight: 800,
-      family: b.accentFont,
-      lineHeight: 36 * u,
-      maxLines: 2,
-      maxHeight: 78 * u,
-    });
-
-    // Titre principal dégradé
-    drawPremiumText(text("title").toUpperCase(), 52 * u, eyebrowY + 110 * u, w * 0.82, {
-      size: portrait ? 130 * u : 108 * u,
-      min: 60 * u,
-      gradient: "white",
-      weight: 900,
-      stroke: rgba(b.gold, 0.7),
-      strokeWidth: Math.max(2, 3 * u),
-      lineHeight: portrait ? 122 * u : 104 * u,
-      maxLines: 3,
-      maxHeight: portrait ? 400 * u : 320 * u,
-    });
-
-    // Bloc contact (details)
-    drawWrappedText(text("details"), 52 * u, h - 260 * u, w * 0.7, {
-      size: 30 * u,
-      min: 20 * u,
-      color: b.white,
-      weight: 800,
-      family: b.bodyFont,
-      lineHeight: 40 * u,
-      maxLines: 3,
-      maxHeight: 130 * u,
-    });
-
-    // Ruban rouge + pill footer
-    const ribbonH = 150 * u;
-    const ribbonY = h - ribbonH;
-    drawRibbon(0, ribbonY, w, ribbonH, {
-      color: b.red,
-      tails: false,
-    });
-    // Liserés dorés du ruban
-    ctx.save();
-    ctx.fillStyle = rgba(b.gold, 0.85);
-    ctx.fillRect(0, ribbonY, w, Math.max(3, 5 * u));
-    ctx.fillRect(0, h - Math.max(3, 5 * u), w, Math.max(3, 5 * u));
-    ctx.restore();
-
-    const footer = [text("date"), text("location")].filter(Boolean).join(" - ");
-    const pillW = w - 104 * u;
-    drawPill(footer, 52 * u, ribbonY + ribbonH * 0.28, pillW, 68 * u, b.white, b.red);
+    ctx.fillStyle = rgba(b.dark, 0.7); ctx.fillRect(0, coachY - 14 * u, panelW, 130 * u);
+    drawFitText(`Coach : ${text("coach")}`, 46 * u, coachY + 48 * u, panelW - 52 * u, { size: 34 * u, min: 20 * u, color: b.gold, weight: 900, family: b.accentFont });
   }
 
   function renderPortrait({ format, photo, logo, icon }) {
-    const { width: w, height: h } = format;
-    const b = state.brand;
-    const u = unit(w, h);
-    fill(b.dark);
-    drawCover(photo, w * 0.34, 0, w * 0.66, h, b.dark);
-    drawOverlay(w * 0.34, 0, w * 0.66, h, "rgba(0,0,0,0.22)");
-    ctx.fillStyle = b.red;
-    ctx.fillRect(0, 0, w * 0.46, h);
-    ctx.fillStyle = b.blue;
-    ctx.fillRect(0, h - 160 * u, w, 160 * u);
-    drawLogo(logo, w - 142 * u, 36 * u, 104 * u);
-    drawIconBadge(icon, 50 * u, 48 * u, 76 * u, b.white, b.gold);
-
-    const titleY = ensureTextBelowIcon(160 * u, 50 * u, 76 * u, 30 * u);
-    drawFitText(text("title").toUpperCase(), 52 * u, titleY, w * 0.62, {
-      size: 58 * u,
-      min: 34 * u,
-      maxHeight: 72 * u,
-      color: b.white,
-      weight: 900,
-    });
-    drawWrappedText(text("name").toUpperCase(), 52 * u, 265 * u, w * 0.54, {
-      size: 84 * u,
-      min: 38 * u,
-      color: b.white,
-      weight: 900,
-      lineHeight: 88 * u,
-      maxLines: 3,
-      maxHeight: 215 * u,
-    });
-    const roleY = h - 252 * u;
-    drawPill(text("role"), 52 * u, roleY, Math.min(430 * u, w * 0.52), 52 * u, b.white, b.red);
-    drawWrappedText(text("stats"), 56 * u, roleY - 70 * u, w - 112 * u, {
-      size: 29 * u,
-      color: b.white,
-      weight: 900,
-      maxLines: 2,
-      maxHeight: 68 * u,
-    });
-    drawWrappedText(`“${text("quote")}”`, 56 * u, h - 110 * u, w - 112 * u, {
-      size: 24 * u,
-      min: 16 * u,
-      color: b.white,
-      family: b.bodyFont,
-      weight: 700,
-      lineHeight: 34 * u,
-      maxLines: 3,
-      maxHeight: 92 * u,
-    });
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
+    drawBg(photo, w, h, 0.14);
+    drawDiagonalSplit(w, h, rgba(b.red, 0.88), rgba(b.blue, 0.84), portrait ? 0.56 : 0.52, 0.46, 80 * u);
+    drawBottomFade(w, h, 0.38); drawHeader(icon, logo, w, h);
+    drawFitText(text("title").toUpperCase(), 48 * u, 168 * u, w * 0.62, { size: 58 * u, min: 32 * u, maxHeight: 72 * u, color: "#fff", weight: 900 });
+    drawWrappedText(text("name").toUpperCase(), 48 * u, portrait ? 310 * u : 280 * u, w * 0.6, { size: portrait ? 106 * u : 86 * u, min: 48 * u, color: b.gold, weight: 900, lineHeight: portrait ? 100 * u : 82 * u, maxLines: 3, maxHeight: portrait ? 330 * u : 268 * u, family: b.accentFont });
+    const pillY = h - 290 * u;
+    drawPill(text("role"), 48 * u, pillY, Math.min(w * 0.5, 440 * u), 54 * u, "#fff", b.red);
+    drawFitText(text("stats"), 54 * u, pillY - 60 * u, w * 0.64, { size: 30 * u, min: 18 * u, color: "#fff", weight: 800 });
+    drawWrappedText(`"${text("quote")}"`, 54 * u, h - 200 * u, w * 0.62, { size: 25 * u, min: 16 * u, color: "rgba(255,255,255,0.88)", family: b.bodyFont, weight: 700, lineHeight: 36 * u, maxLines: 4, maxHeight: 154 * u });
+    drawFooterBand(["Allez l'ESD !"], w, h, b.dark + "e8");
   }
 
   function renderTransfer({ format, photo, logo, icon }) {
-    const { width: w, height: h } = format;
-    const b = state.brand;
-    const u = unit(w, h);
-    drawCover(photo, 0, 0, w, h, b.dark);
-    drawOverlay(0, 0, w, h, "rgba(0,0,0,0.46)");
-    drawBottomFade(w, h, 0.62);
-    ctx.fillStyle = rgba(b.red, 0.86);
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(w * 0.58, 0);
-    ctx.lineTo(w * 0.33, h);
-    ctx.lineTo(0, h);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = rgba(b.blue, 0.78);
-    ctx.fillRect(w * 0.68, 0, w * 0.32, h);
-    drawLogo(logo, w - 148 * u, 38 * u, 108 * u);
-    drawIconBadge(icon, 52 * u, 52 * u, 76 * u, b.white, b.blue);
-
-    const titleY = ensureTextBelowIcon(175 * u, 52 * u, 76 * u, 30 * u);
-    drawFitText(text("title").toUpperCase(), 56 * u, titleY, w * 0.68, {
-      size: 88 * u,
-      min: 42 * u,
-      color: b.white,
-      weight: 900,
-    });
-    drawWrappedText(text("name").toUpperCase(), 56 * u, 305 * u, w * 0.62, {
-      size: 86 * u,
-      color: b.gold,
-      weight: 900,
-      lineHeight: 88 * u,
-      maxLines: 3,
-    });
-    drawPill(text("role"), 58 * u, h - 330 * u, Math.min(400 * u, w * 0.48), 52 * u, b.white, b.red);
-    drawWrappedText(text("details"), 58 * u, h - 245 * u, w * 0.68, {
-      size: 28 * u,
-      color: b.white,
-      family: b.bodyFont,
-      weight: 700,
-      lineHeight: 40 * u,
-      maxLines: 4,
-    });
-    drawWrappedText(text("cta").toUpperCase(), 58 * u, h - 62 * u, w * 0.75, {
-      size: 30 * u,
-      color: b.white,
-      weight: 900,
-      maxLines: 1,
-    });
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
+    drawBg(photo, w, h, 0.38);
+    ctx.fillStyle = rgba(b.red, 0.9); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(w*0.62,0); ctx.lineTo(w*0.36,h); ctx.lineTo(0,h); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = rgba(b.blue, 0.82); ctx.fillRect(w * 0.72, 0, w * 0.28, h);
+    drawBottomFade(w, h, 0.48); drawHeader(icon, logo, w, h);
+    drawFitText(text("title").toUpperCase(), 52 * u, 168 * u, w * 0.7, { size: portrait ? 96 * u : 78 * u, min: 44 * u, maxHeight: 114 * u, color: "#fff", weight: 900 });
+    drawWrappedText(text("name").toUpperCase(), 52 * u, portrait ? 312 * u : 272 * u, w * 0.62, { size: portrait ? 104 * u : 84 * u, min: 48 * u, color: b.gold, weight: 900, lineHeight: portrait ? 98 * u : 80 * u, maxLines: 3, maxHeight: portrait ? 320 * u : 260 * u, family: b.accentFont });
+    drawPill(text("role"), 52 * u, h - 330 * u, Math.min(440 * u, w * 0.52), 54 * u, "#fff", b.red);
+    drawWrappedText(text("details"), 56 * u, h - 240 * u, w * 0.7, { size: 28 * u, min: 18 * u, color: "#fff", family: b.bodyFont, weight: 700, lineHeight: 42 * u, maxLines: 4 });
+    drawFooterBand([text("cta") || "BIENVENUE À LA MAISON"], w, h, b.dark + "ee");
   }
 
-  function renderSponsor({ format, photo, logo, icon, partnerLogo }) {
-    const { width: w, height: h } = format;
-    const b = state.brand;
-    const u = unit(w, h);
-    fill("#ffffff");
-    ctx.fillStyle = b.red;
-    ctx.fillRect(0, 0, w * 0.38, h);
-    drawCover(photo, 0, 0, w * 0.38, h, b.red);
-    drawOverlay(0, 0, w * 0.38, h, rgba(b.red, 0.68));
-    ctx.fillStyle = b.blue;
-    ctx.fillRect(0, h - 120 * u, w, 120 * u);
-    drawLogo(logo, w - 145 * u, 36 * u, 108 * u);
-    drawIconBadge(icon, 54 * u, 52 * u, 76 * u, b.white, b.gold);
 
-    const titleY = ensureTextBelowIcon(155 * u, 54 * u, 76 * u, 30 * u);
-    drawFitText(text("title").toUpperCase(), w * 0.43, titleY, w * 0.45, {
-      size: 62 * u,
-      min: 34 * u,
-      color: b.red,
-      weight: 900,
-    });
-
-    const boxX = w * 0.43;
-    const boxY = 215 * u;
-    const boxW = w * 0.48;
-    const boxH = Math.min(300 * u, h * 0.34);
-    ctx.fillStyle = "#f3f5f8";
-    roundRect(boxX, boxY, boxW, boxH, 8 * u);
-    ctx.fill();
-    if (partnerLogo) {
-      drawContain(partnerLogo, boxX + 24 * u, boxY + 24 * u, boxW - 48 * u, boxH - 48 * u);
-    } else {
-      drawWrappedText(text("sponsor").toUpperCase(), boxX + 32 * u, boxY + boxH * 0.56, boxW - 64 * u, {
-        size: 48 * u,
-        color: b.dark,
-        weight: 900,
-        align: "center",
-        maxLines: 2,
-      });
-    }
-
-    drawWrappedText(text("sponsor"), w * 0.43, boxY + boxH + 65 * u, w * 0.47, {
-      size: 34 * u,
-      color: b.blue,
-      weight: 900,
-      maxLines: 2,
-    });
-    drawWrappedText(text("details"), w * 0.43, boxY + boxH + 120 * u, w * 0.47, {
-      size: 25 * u,
-      color: b.dark,
-      family: b.bodyFont,
-      weight: 700,
-      lineHeight: 36 * u,
-      maxLines: 4,
-    });
-    drawWrappedText(text("cta").toUpperCase(), 52 * u, h - 62 * u, w - 104 * u, {
-      size: 28 * u,
-      color: b.white,
-      weight: 900,
-      align: "center",
-      maxLines: 1,
-    });
+  function renderEvent({ format, photo, logo, icon }) {
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
+    drawBg(photo, w, h, 0.2);
+    ctx.fillStyle = rgba(b.blue, 0.88); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(w*0.68,0); ctx.lineTo(w*0.46,h); ctx.lineTo(0,h); ctx.closePath(); ctx.fill();
+    drawHeader(icon, logo, w, h);
+    drawFitText(text("subtitle").toUpperCase(), 52 * u, 170 * u, w * 0.58, { size: 32 * u, min: 20 * u, color: b.gold, weight: 900, family: b.accentFont });
+    drawWrappedText(text("title").toUpperCase(), 50 * u, portrait ? 268 * u : 240 * u, w * 0.6, { size: portrait ? 88 * u : 70 * u, min: 38 * u, color: "#fff", weight: 900, lineHeight: portrait ? 86 * u : 68 * u, maxLines: 4, maxHeight: portrait ? 360 * u : 288 * u });
+    drawWrappedText(text("details"), 54 * u, h - 300 * u, w * 0.6, { size: 28 * u, min: 18 * u, color: "rgba(255,255,255,0.9)", family: b.bodyFont, weight: 700, lineHeight: 40 * u, maxLines: 4, maxHeight: 166 * u });
+    drawFooterBand([[text("date"), text("location")].filter(Boolean).join("  |  "), text("cta") || ""], w, h, b.red);
   }
 
-  function renderInfo({ format, photo, logo, icon }) {
-    const { width: w, height: h } = format;
-    const b = state.brand;
-    const u = unit(w, h);
-    fill("#ffffff");
-    drawCover(photo, w * 0.6, 0, w * 0.4, h, "#e5e7eb");
-    drawOverlay(w * 0.6, 0, w * 0.4, h, "rgba(255,255,255,0.58)");
-    ctx.fillStyle = b.red;
-    ctx.fillRect(0, 0, w, 24 * u);
-    ctx.fillStyle = b.blue;
-    ctx.fillRect(0, h - 118 * u, w, 118 * u);
-    drawLogo(logo, w - 145 * u, 42 * u, 108 * u);
-    drawIconBadge(icon, 58 * u, 72 * u, 100 * u, b.white, b.red);
-
-    const subtitleY = ensureTextBelowIcon(220 * u, 58 * u, 100 * u, 30 * u);
-    drawWrappedText(text("subtitle").toUpperCase(), 58 * u, subtitleY, w * 0.62, {
-      size: 28 * u,
-      color: b.red,
-      weight: 900,
-      maxLines: 1,
-    });
-    drawWrappedText(text("title").toUpperCase(), 56 * u, 320 * u, w * 0.72, {
-      size: h > w ? 78 * u : 62 * u,
-      color: b.dark,
-      weight: 900,
-      lineHeight: (h > w ? 84 : 68) * u,
-      maxLines: 4,
-    });
-    drawPill(text("date"), 58 * u, h - 360 * u, Math.min(620 * u, w * 0.62), 56 * u, b.red, b.white);
-    drawWrappedText(text("details"), 60 * u, h - 265 * u, w * 0.68, {
-      size: 28 * u,
-      color: b.dark,
-      family: b.bodyFont,
-      weight: 700,
-      lineHeight: 40 * u,
-      maxLines: 4,
-      maxHeight: 150 * u,
-    });
-    drawWrappedText(text("cta").toUpperCase(), 56 * u, h - 52 * u, w - 112 * u, {
-      size: 28 * u,
-      color: b.white,
-      weight: 900,
-      align: "center",
-      maxLines: 1,
-    });
-  }
-
-  function renderGallery({ format, photo, logo, icon, gallery }) {
-    const { width: w, height: h } = format;
-    const b = state.brand;
-    const u = unit(w, h);
-    fill("#ffffff");
-    const gap = 18 * u;
-    const top = 150 * u;
-    const mainH = h * 0.48;
-    drawCover(photo, 44 * u, top, w - 88 * u, mainH, b.dark);
-    const thumbs = gallery.length ? gallery : [photo, photo, photo].filter(Boolean);
-    const thumbY = top + mainH + gap;
-    const thumbW = (w - 88 * u - gap * 2) / 3;
-    thumbs.slice(0, 3).forEach((img, index) => {
-      drawCover(img, 44 * u + index * (thumbW + gap), thumbY, thumbW, Math.min(190 * u, h * 0.14), b.dark);
-    });
-    ctx.fillStyle = b.red;
-    ctx.fillRect(0, 0, w, 116 * u);
-    ctx.fillStyle = b.blue;
-    ctx.fillRect(0, h - 115 * u, w, 115 * u);
-    drawLogo(logo, w - 136 * u, 25 * u, 94 * u);
-    drawIconBadge(icon, 46 * u, 27 * u, 70 * u, b.white, b.red);
-
-    const titleY = ensureTextBelowIcon(77 * u, 46 * u, 70 * u, 30 * u);
-    drawFitText(text("title").toUpperCase(), 134 * u, titleY, w - 292 * u, {
-      size: 54 * u,
-      min: 28 * u,
-      color: b.white,
-      weight: 900,
-    });
-    drawWrappedText(text("subtitle"), 50 * u, thumbY + Math.min(190 * u, h * 0.14) + 58 * u, w - 100 * u, {
-      size: 38 * u,
-      color: b.dark,
-      weight: 900,
-      align: "center",
-      maxLines: 2,
-    });
-    drawWrappedText(text("details"), 70 * u, h - 220 * u, w - 140 * u, {
-      size: 25 * u,
-      color: b.dark,
-      family: b.bodyFont,
-      weight: 700,
-      lineHeight: 36 * u,
-      align: "center",
-      maxLines: 3,
-    });
-    drawWrappedText(text("cta").toUpperCase(), 54 * u, h - 50 * u, w - 108 * u, {
-      size: 28 * u,
-      color: b.white,
-      weight: 900,
-      align: "center",
-      maxLines: 1,
-    });
-  }
-
-  function renderQuote({ format, photo, logo, icon }) {
-    const { width: w, height: h } = format;
-    const b = state.brand;
-    const u = unit(w, h);
-    drawCover(photo, 0, 0, w, h, b.dark);
-    drawOverlay(0, 0, w, h, "rgba(0,0,0,0.54)");
-    ctx.fillStyle = rgba(b.red, 0.9);
-    ctx.fillRect(0, 0, w, 140 * u);
-    ctx.fillStyle = rgba(b.white, 0.94);
-    roundRect(58 * u, h * 0.28, w - 116 * u, h * 0.42, 8 * u);
-    ctx.fill();
-    drawLogo(logo, w - 140 * u, 24 * u, 96 * u);
-    drawIconBadge(icon, 48 * u, 28 * u, 70 * u, b.white, b.blue);
-
-    const titleY = ensureTextBelowIcon(83 * u, 48 * u, 70 * u, 30 * u);
-    drawFitText(text("title").toUpperCase(), 132 * u, titleY, w - 285 * u, {
-      size: 54 * u,
-      min: 30 * u,
-      color: b.white,
-      weight: 900,
-    });
-    drawWrappedText(`“${text("quote")}”`, 88 * u, h * 0.39, w - 176 * u, {
-      size: 42 * u,
-      color: b.dark,
-      family: b.bodyFont,
-      weight: 800,
-      lineHeight: 56 * u,
-      align: "center",
-      maxLines: 5,
-    });
-    drawWrappedText(text("name").toUpperCase(), 70 * u, h * 0.78, w - 140 * u, {
-      size: 50 * u,
-      color: b.white,
-      weight: 900,
-      align: "center",
-      maxLines: 1,
-    });
-    drawWrappedText(`${text("role")} · ${text("cta")}`, 70 * u, h * 0.84, w - 140 * u, {
-      size: 24 * u,
-      color: b.gold,
-      weight: 900,
-      align: "center",
-      maxLines: 2,
-    });
-  }
-
-  function renderCelebration({ format, photo, logo, icon }) {
-    const { width: w, height: h } = format;
-    const b = state.brand;
-    const u = unit(w, h);
-    fill(b.red);
-    drawCover(photo, 0, 0, w, h, b.red);
-    drawOverlay(0, 0, w, h, rgba(b.red, 0.58));
-    ctx.fillStyle = rgba(b.dark, 0.48);
-    ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = b.gold;
-    ctx.beginPath();
-    ctx.moveTo(w, 0);
-    ctx.lineTo(w, h * 0.42);
-    ctx.lineTo(w * 0.58, 0);
-    ctx.closePath();
-    ctx.fill();
-    drawLogo(logo, w - 146 * u, 38 * u, 108 * u);
-    drawIconBadge(icon, 56 * u, 55 * u, 82 * u, b.white, b.red);
-
-    const subtitleY = ensureTextBelowIcon(185 * u, 56 * u, 82 * u, 30 * u);
-    drawWrappedText(text("subtitle").toUpperCase(), 56 * u, subtitleY, w * 0.72, {
-      size: 34 * u,
-      color: b.gold,
-      weight: 900,
-      maxLines: 2,
-    });
-    drawWrappedText(text("title").toUpperCase(), 54 * u, 330 * u, w * 0.86, {
-      size: h > w ? 92 * u : 76 * u,
-      color: b.white,
-      weight: 900,
-      lineHeight: (h > w ? 96 : 80) * u,
-      maxLines: 4,
-    });
-    drawWrappedText(text("details"), 60 * u, h - 310 * u, w - 120 * u, {
-      size: 30 * u,
-      color: b.white,
-      family: b.bodyFont,
-      weight: 700,
-      lineHeight: 42 * u,
-      maxLines: 4,
-    });
-    drawPill(text("cta"), 58 * u, h - 130 * u, w - 116 * u, 62 * u, b.white, b.red);
+  function renderConvivialEvent({ format, photo, logo, icon }) {
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
+    drawBg(photo, w, h, 0.22);
+    const fadeH = h * (portrait ? 0.62 : 0.58);
+    ctx.fillStyle = blockGradient(0, 0, w, fadeH, rgba(b.blue, 0.92), rgba(b.blue, 0.04)); ctx.fillRect(0, 0, w, fadeH);
+    drawHeader(icon, logo, w, h);
+    ctx.save(); ctx.fillStyle = "#fff"; ctx.font = `700 ${Math.round(42 * u)}px ${b.accentFont}`; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic"; ctx.fillText("BIENVENUE", 44 * u + 80 * u, 44 * u + 58 * u); ctx.restore();
+    const eyebrowY = 44 * u + 80 * u + 74 * u;
+    drawFitText(text("subtitle").toUpperCase(), 50 * u, eyebrowY, w * 0.76, { size: 32 * u, min: 20 * u, color: b.gold, weight: 900, family: b.accentFont });
+    drawWrappedText(text("title").toUpperCase(), 50 * u, eyebrowY + (portrait ? 120 : 100) * u, w * 0.8, { size: portrait ? 128 * u : 104 * u, min: 58 * u, color: "#fff", weight: 900, lineHeight: portrait ? 120 * u : 98 * u, maxLines: 3, maxHeight: portrait ? 390 * u : 310 * u });
+    drawWrappedText(text("details"), 50 * u, h - 250 * u, w * 0.72, { size: 30 * u, min: 20 * u, color: "rgba(255,255,255,0.92)", family: b.bodyFont, weight: 700, lineHeight: 42 * u, maxLines: 3, maxHeight: 132 * u });
+    const ribbonH = 148 * u, ribbonY = h - ribbonH;
+    ctx.fillStyle = b.red; ctx.fillRect(0, ribbonY, w, ribbonH);
+    ctx.fillStyle = b.gold; ctx.fillRect(0, ribbonY, w, Math.max(3, 5 * u)); ctx.fillRect(0, h - Math.max(3, 5 * u), w, Math.max(3, 5 * u));
+    const footer = [text("date"), text("location")].filter(Boolean).join("  —  ");
+    drawFitText(footer, 52 * u, ribbonY + ribbonH * 0.56, w - 104 * u, { size: ribbonH * 0.3, min: 16 * u, color: "#fff", weight: 900, family: b.accentFont, align: "center", clip: false });
+    drawFitText(text("cta") || "Contactez-nous", 52 * u, ribbonY + ribbonH * 0.86, w - 104 * u, { size: ribbonH * 0.22, min: 14 * u, color: "rgba(255,255,255,0.8)", weight: 700, family: b.bodyFont, align: "center", clip: false });
   }
 
   function renderRecruitment({ format, photo, logo, icon }) {
-    const { width: w, height: h } = format;
-    const b = state.brand;
-    const u = unit(w, h);
-    drawCover(photo, 0, 0, w, h, b.dark);
-    drawOverlay(0, 0, w, h, "rgba(0,0,0,0.36)");
-    drawBottomFade(w, h, 0.74);
-    ctx.fillStyle = b.red;
-    ctx.fillRect(0, 0, w, 130 * u);
-    ctx.fillStyle = b.blue;
-    ctx.fillRect(0, h - 130 * u, w, 130 * u);
-    drawLogo(logo, w - 142 * u, 24 * u, 98 * u);
-    drawIconBadge(icon, 46 * u, 28 * u, 74 * u, b.white, b.gold);
-
-    const titleY = ensureTextBelowIcon(84 * u, 46 * u, 74 * u, 30 * u);
-    drawFitText(text("title").toUpperCase(), 132 * u, titleY, w - 290 * u, {
-      size: 54 * u,
-      min: 28 * u,
-      color: b.white,
-      weight: 900,
-    });
-    drawWrappedText(text("subtitle").toUpperCase(), 60 * u, h * 0.52, w - 120 * u, {
-      size: 72 * u,
-      color: b.white,
-      weight: 900,
-      lineHeight: 76 * u,
-      align: "center",
-      maxLines: 3,
-    });
-    drawWrappedText(text("details"), 76 * u, h - 315 * u, w - 152 * u, {
-      size: 29 * u,
-      color: b.white,
-      family: b.bodyFont,
-      weight: 700,
-      lineHeight: 42 * u,
-      align: "center",
-      maxLines: 4,
-    });
-    drawWrappedText(text("cta").toUpperCase(), 58 * u, h - 55 * u, w - 116 * u, {
-      size: 28 * u,
-      color: b.white,
-      weight: 900,
-      align: "center",
-      maxLines: 1,
-    });
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
+    drawBg(photo, w, h, 0.34); drawBottomFade(w, h, 0.72);
+    const topH = 136 * u, botH = 136 * u;
+    ctx.fillStyle = b.red; ctx.fillRect(0, 0, w, topH); ctx.fillStyle = b.gold; ctx.fillRect(0, topH - Math.max(3, 5 * u), w, Math.max(3, 5 * u));
+    ctx.fillStyle = b.blue; ctx.fillRect(0, h - botH, w, botH); ctx.fillStyle = b.gold; ctx.fillRect(0, h - botH, w, Math.max(3, 5 * u));
+    drawHeader(icon, logo, w, h);
+    drawFitText(text("title").toUpperCase(), 130 * u, topH * 0.68, w - 260 * u, { size: 58 * u, min: 28 * u, color: "#fff", weight: 900, family: b.accentFont });
+    drawWrappedText(text("subtitle").toUpperCase(), w * 0.5 - w * 0.4, h * 0.5, w * 0.8, { size: portrait ? 80 * u : 66 * u, min: 36 * u, color: "#fff", weight: 900, lineHeight: portrait ? 78 * u : 64 * u, align: "center", maxLines: 3 });
+    drawWrappedText(text("details"), 72 * u, h - 290 * u, w - 144 * u, { size: 30 * u, min: 18 * u, color: "rgba(255,255,255,0.92)", family: b.bodyFont, weight: 700, lineHeight: 44 * u, align: "center", maxLines: 4 });
+    drawFitText(text("cta") || "Contactez-nous", 52 * u, h - botH * 0.3, w - 104 * u, { size: 30 * u, min: 16 * u, color: b.gold, weight: 900, family: b.accentFont, align: "center", clip: false });
   }
 
-  function exportImage(type, extension) {
-    const filename = makeFilename(extension);
 
-    if (canvas.toBlob) {
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) {
-            setStatus("Export impossible");
-            return;
-          }
-          downloadBlob(blob, filename);
-          setStatus(`${extension.toUpperCase()} exporté`);
-        },
-        type,
-        type === "image/jpeg" ? 1 : undefined,
-      );
-      return;
-    }
-
-    try {
-      const quality = type === "image/jpeg" ? 1 : undefined;
-      const url = canvas.toDataURL(type, quality);
-      downloadUrl(url, filename);
-      setStatus(`${extension.toUpperCase()} exporté`);
-    } catch (error) {
-      console.error(error);
-      setStatus("Export bloqué par le navigateur");
-    }
+  function renderSponsor({ format, photo, logo, icon, partnerLogo }) {
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h);
+    ctx.fillStyle = "#f4f6f9"; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = b.red; ctx.fillRect(0, 0, 22 * u, h); ctx.fillStyle = b.gold; ctx.fillRect(22 * u, 0, Math.max(3, 5 * u), h);
+    ctx.fillStyle = b.blue; ctx.fillRect(0, h - 130 * u, w, 130 * u);
+    drawHeader(icon, logo, w, h);
+    drawFitText(text("title").toUpperCase(), 56 * u, 168 * u, w * 0.72, { size: 64 * u, min: 34 * u, maxHeight: 78 * u, color: b.red, weight: 900 });
+    const boxX = 56 * u, boxY = 220 * u, boxW = w - 112 * u, boxH = Math.min(340 * u, h * 0.36);
+    ctx.fillStyle = "#fff"; ctx.shadowColor = "rgba(17,24,39,0.12)"; ctx.shadowBlur = 28 * u; roundRect(boxX, boxY, boxW, boxH, 12 * u); ctx.fill();
+    ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
+    if (partnerLogo) drawContain(partnerLogo, boxX + 28 * u, boxY + 28 * u, boxW - 56 * u, boxH - 56 * u);
+    else drawFitText(text("sponsor").toUpperCase(), boxX + boxW * 0.5, boxY + boxH * 0.56, boxW - 80 * u, { size: 54 * u, min: 28 * u, color: b.dark, weight: 900, align: "center" });
+    drawFitText(text("sponsor"), 56 * u, boxY + boxH + 68 * u, w - 112 * u, { size: 38 * u, min: 22 * u, color: b.blue, weight: 900 });
+    drawWrappedText(text("details"), 58 * u, boxY + boxH + 122 * u, w - 116 * u, { size: 26 * u, min: 18 * u, color: b.dark, family: b.bodyFont, weight: 700, lineHeight: 38 * u, maxLines: 4 });
+    drawFitText(text("cta").toUpperCase(), 52 * u, h - 50 * u, w - 104 * u, { size: 30 * u, min: 16 * u, color: "#fff", weight: 900, align: "center", family: b.accentFont, clip: false });
   }
 
-  function exportPdf() {
-    try {
-      const blob = createPdfFromCanvas(canvas);
-      downloadBlob(blob, makeFilename("pdf"));
-      setStatus("PDF exporté");
-    } catch (error) {
-      console.error(error);
-      setStatus("PDF impossible à générer");
-    }
+  function renderInfo({ format, photo, logo, icon }) {
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
+    ctx.fillStyle = "#f4f6f9"; ctx.fillRect(0, 0, w, h);
+    if (photo) { ctx.save(); ctx.globalAlpha = 0.18; drawCover(photo, w * 0.45, 0, w * 0.55, h, "#ccc"); ctx.globalAlpha = 1; ctx.restore(); }
+    const barH = 20 * u;
+    ctx.fillStyle = b.red; ctx.fillRect(0, 0, w, barH);
+    ctx.fillStyle = b.gold; ctx.fillRect(0, barH, w, Math.max(2, 3 * u));
+    ctx.fillStyle = b.red; ctx.fillRect(0, barH + 3 * u, 20 * u, h - barH - 3 * u - 130 * u);
+    drawHeader(icon, logo, w, h);
+    drawFitText(text("subtitle").toUpperCase(), 56 * u, 176 * u, w * 0.64, { size: 30 * u, min: 18 * u, color: b.red, weight: 900, family: b.accentFont });
+    drawWrappedText(text("title").toUpperCase(), 54 * u, portrait ? 290 * u : 260 * u, w * 0.76, { size: portrait ? 72 * u : 58 * u, min: 34 * u, color: b.dark, weight: 900, lineHeight: portrait ? 76 * u : 62 * u, maxLines: 4, maxHeight: portrait ? 310 * u : 258 * u });
+    if (text("date")) drawPill(text("date"), 54 * u, h - 348 * u, Math.min(w * 0.64, 600 * u), 58 * u, b.red, "#fff");
+    drawWrappedText(text("details"), 58 * u, h - 258 * u, w * 0.72, { size: 29 * u, min: 18 * u, color: b.dark, family: b.bodyFont, weight: 600, lineHeight: 42 * u, maxLines: 4, maxHeight: 176 * u });
+    ctx.fillStyle = b.blue; ctx.fillRect(0, h - 118 * u, w, 118 * u);
+    drawFitText(text("cta").toUpperCase(), 52 * u, h - 50 * u, w - 104 * u, { size: 30 * u, min: 16 * u, color: "#fff", weight: 900, align: "center", family: b.accentFont, clip: false });
   }
 
-  function createPdfFromCanvas(sourceCanvas) {
-    const jpegBase64 = sourceCanvas.toDataURL("image/jpeg", 1).split(",")[1];
-    const jpegBinary = atob(jpegBase64);
-    const jpegBytes = new Uint8Array(jpegBinary.length);
-    for (let i = 0; i < jpegBinary.length; i += 1) {
-      jpegBytes[i] = jpegBinary.charCodeAt(i);
-    }
-
-    const encoder = new TextEncoder();
-    const parts = [];
-    const offsets = [0];
-    let offset = 0;
-    const addAscii = (textValue) => {
-      const bytes = encoder.encode(textValue);
-      parts.push(bytes);
-      offset += bytes.length;
-    };
-    const addBytes = (bytes) => {
-      parts.push(bytes);
-      offset += bytes.length;
-    };
-    const beginObj = (number) => {
-      offsets[number] = offset;
-      addAscii(`${number} 0 obj\n`);
-    };
-    const endObj = () => addAscii("\nendobj\n");
-    const w = sourceCanvas.width;
-    const h = sourceCanvas.height;
-    const content = `q\n${w} 0 0 ${h} 0 0 cm\n/Im0 Do\nQ\n`;
-
-    addAscii("%PDF-1.4\n%\u00e2\u00e3\u00cf\u00d3\n");
-    beginObj(1);
-    addAscii("<< /Type /Catalog /Pages 2 0 R >>");
-    endObj();
-    beginObj(2);
-    addAscii("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
-    endObj();
-    beginObj(3);
-    addAscii(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w} ${h}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`);
-    endObj();
-    beginObj(4);
-    addAscii(`<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`);
-    addBytes(jpegBytes);
-    addAscii("\nendstream");
-    endObj();
-    beginObj(5);
-    addAscii(`<< /Length ${encoder.encode(content).length} >>\nstream\n${content}endstream`);
-    endObj();
-
-    const xrefOffset = offset;
-    addAscii("xref\n0 6\n0000000000 65535 f \n");
-    for (let i = 1; i <= 5; i += 1) {
-      addAscii(`${String(offsets[i]).padStart(10, "0")} 00000 n \n`);
-    }
-    addAscii(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
-    return new Blob(parts, { type: "application/pdf" });
+  function renderQuote({ format, photo, logo, icon }) {
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
+    drawBg(photo, w, h, 0.52); drawBottomFade(w, h, 0.3);
+    ctx.fillStyle = rgba(b.red, 0.95); ctx.fillRect(0, 0, w, 140 * u);
+    ctx.fillStyle = b.gold; ctx.fillRect(0, 138 * u, w, Math.max(3, 5 * u));
+    drawHeader(icon, logo, w, h);
+    drawFitText(text("title").toUpperCase(), 130 * u, 90 * u, w - 280 * u, { size: 56 * u, min: 28 * u, color: "#fff", weight: 900, family: b.accentFont });
+    const blockY = portrait ? h * 0.22 : h * 0.2, blockH = portrait ? h * 0.44 : h * 0.42;
+    ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.shadowColor = "rgba(0,0,0,0.22)"; ctx.shadowBlur = 30 * u; roundRect(52 * u, blockY, w - 104 * u, blockH, 10 * u); ctx.fill();
+    ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
+    ctx.fillStyle = rgba(b.red, 0.14); ctx.font = `900 ${Math.round(160 * u)}px ${b.accentFont}`; ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillText('"', 58 * u, blockY - 20 * u);
+    drawWrappedText(`"${text("quote")}"`, 78 * u, blockY + 64 * u, w - 156 * u, { size: portrait ? 40 * u : 34 * u, min: 22 * u, color: b.dark, family: b.bodyFont, weight: 800, lineHeight: portrait ? 56 * u : 48 * u, align: "center", maxLines: 6, maxHeight: blockH - 80 * u });
+    const nameY = blockY + blockH + 50 * u;
+    drawFitText(text("name").toUpperCase(), w * 0.5, nameY, w * 0.74, { size: 58 * u, min: 28 * u, color: "#fff", weight: 900, align: "center" });
+    drawFitText(`${text("role")}  ·  ${text("cta") || "ES Doubs"}`, w * 0.5, nameY + 62 * u, w * 0.72, { size: 26 * u, min: 16 * u, color: b.gold, weight: 800, align: "center", family: b.accentFont });
   }
+
+  function renderCelebration({ format, photo, logo, icon }) {
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
+    drawBg(photo, w, h, 0.3); ctx.fillStyle = rgba(b.red, 0.78); ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = rgba(b.gold, 0.82); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(w*0.48,0); ctx.lineTo(0,h*0.38); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = rgba(b.blue, 0.72); ctx.beginPath(); ctx.moveTo(w,h); ctx.lineTo(w*0.52,h); ctx.lineTo(w,h*0.62); ctx.closePath(); ctx.fill();
+    const cc = ["#ffffff", b.gold, rgba(b.blue, 0.8)];
+    for (let i = 0; i < 28; i++) { const cx = ((i*137+217) % (w-40))+20, cy = ((i*97+119) % (h-40))+20, r = 4*u+(i%4)*3*u; ctx.fillStyle = cc[i%cc.length]; ctx.globalAlpha = 0.22+(i%5)*0.06; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill(); }
+    ctx.globalAlpha = 1;
+    drawHeader(icon, logo, w, h);
+    drawFitText(text("subtitle").toUpperCase(), 52 * u, 172 * u, w * 0.7, { size: 38 * u, min: 22 * u, color: b.gold, weight: 900, family: b.accentFont });
+    drawWrappedText(text("title").toUpperCase(), 50 * u, portrait ? 300 * u : 268 * u, w * 0.84, { size: portrait ? 96 * u : 78 * u, min: 44 * u, color: "#fff", weight: 900, lineHeight: portrait ? 92 * u : 74 * u, maxLines: 4, maxHeight: portrait ? 390 * u : 316 * u });
+    drawWrappedText(text("details"), 56 * u, h - 290 * u, w - 112 * u, { size: 30 * u, min: 18 * u, color: "rgba(255,255,255,0.9)", family: b.bodyFont, weight: 700, lineHeight: 44 * u, maxLines: 4 });
+    drawFooterBand([text("cta") || ""], w, h, rgba(b.dark, 0.88));
+  }
+
+  function renderList({ format, photo, logo, icon }) {
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h);
+    ctx.fillStyle = "#f4f6f9"; ctx.fillRect(0, 0, w, h);
+    if (photo) { ctx.save(); ctx.globalAlpha = 0.14; drawCover(photo, w*0.56, 0, w*0.44, h, "#bbb"); ctx.globalAlpha = 1; ctx.restore(); }
+    ctx.fillStyle = b.red;  ctx.fillRect(0, 0, 24*u, h);
+    ctx.fillStyle = b.gold; ctx.fillRect(24*u, 0, Math.max(2, 4*u), h);
+    ctx.fillStyle = b.blue; ctx.fillRect(0, h - 90*u, w, 90*u);
+    drawHeader(icon, logo, w, h);
+    drawFitText(text("title").toUpperCase(), 54*u, 162*u, w*0.64, { size: 72*u, min: 36*u, maxHeight: 86*u, color: b.dark, weight: 900 });
+    drawFitText(text("subtitle"), 56*u, 204*u, w*0.6, { size: 28*u, min: 16*u, color: b.red, weight: 900, family: b.accentFont });
+    drawPill(text("date"), 54*u, 226*u, Math.min(w*0.52, 520*u), 46*u, b.blue, "#fff");
+    const startY = 316*u, available = h - startY - 120*u;
+    const rowItems = limitVisibleLines(lines(text("items")), Math.max(1, Math.floor(available / (48*u))));
+    const rowH = Math.max(44*u, Math.min(86*u, available / Math.max(rowItems.length, 1)));
+    rowItems.forEach((row, i) => {
+      const ry = startY + i*rowH;
+      ctx.fillStyle = i%2 ? rgba(b.blue,0.07) : rgba(b.red,0.06); roundRect(52*u, ry, w*0.7, rowH-8*u, 8*u); ctx.fill();
+      ctx.fillStyle = i%2 ? b.blue : b.red; ctx.fillRect(52*u, ry, 6*u, rowH-8*u);
+      drawFitText(row, 72*u, ry+rowH*0.62, w*0.64, { size: Math.min(28*u,rowH*0.38), min: 18*u, color: b.dark, weight: 800 });
+    });
+    drawFitText(text("footer") || "Allez l'ESD !", 52*u, h-36*u, w-104*u, { size: 28*u, min: 14*u, color: "#fff", weight: 900, align: "center", family: b.accentFont, clip: false });
+  }
+
+  function renderTable({ format, photo, logo, icon }) {
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h);
+    drawBg(photo, w, h, 0.5); drawBottomFade(w, h, 0.36);
+    ctx.fillStyle = b.red; ctx.fillRect(0, 0, w, 20*u); ctx.fillStyle = b.gold; ctx.fillRect(0, 20*u, w, Math.max(2, 4*u));
+    drawHeader(icon, logo, w, h);
+    drawFitText(text("title").toUpperCase(), 52*u, 162*u, w*0.74, { size: 80*u, min: 42*u, maxHeight: 96*u, color: "#fff", weight: 900 });
+    drawFitText(text("subtitle"), 54*u, 210*u, w*0.7, { size: 30*u, min: 16*u, color: b.gold, weight: 800, family: b.accentFont });
+    const boxX=52*u, boxY=264*u, boxW=w-104*u, avail=h-boxY-130*u;
+    const rowItems = limitVisibleLines(lines(text("items")), Math.max(1, Math.floor(avail/(46*u))));
+    const rowH = Math.max(42*u, Math.min(80*u, avail/Math.max(rowItems.length,1)));
+    rowItems.forEach((row, i) => {
+      const ry = boxY+i*rowH;
+      ctx.fillStyle = i===0 ? b.red : (i%2 ? rgba("#ffffff",0.18) : rgba("#ffffff",0.1)); roundRect(boxX,ry,boxW,rowH-8*u,6*u); ctx.fill();
+      ctx.save(); ctx.fillStyle = i===0?b.gold:rgba("#ffffff",0.5); ctx.font=`900 ${Math.round(Math.min(26*u,rowH*0.4))}px ${b.bodyFont}`; ctx.textAlign="center"; ctx.textBaseline="alphabetic"; ctx.fillText(String(i+1),boxX+30*u,ry+rowH*0.66); ctx.restore();
+      drawFitText(row.replace(/^\d+\.\s*/,""), boxX+56*u, ry+rowH*0.66, boxW-72*u, { size: Math.min(30*u,rowH*0.42), min: 16*u, color: "#fff", weight: 900 });
+    });
+    drawFitText(text("footer")||"", 52*u, h-50*u, w-104*u, { size: 24*u, min: 14*u, color: rgba(b.gold,0.9), weight: 800, align: "center", family: b.bodyFont, clip: false });
+  }
+
+  function renderGallery({ format, photo, logo, icon, gallery }) {
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
+    ctx.fillStyle = "#f4f6f9"; ctx.fillRect(0, 0, w, h);
+    const headerH = portrait ? 128*u : 116*u;
+    ctx.fillStyle = b.red; ctx.fillRect(0,0,w,headerH); ctx.fillStyle = b.gold; ctx.fillRect(0,headerH-Math.max(3,5*u),w,Math.max(3,5*u));
+    drawHeader(icon, logo, w, h);
+    drawFitText(text("title").toUpperCase(), 130*u, headerH*0.68, w-270*u, { size: 58*u, min: 26*u, color: "#fff", weight: 900, family: b.accentFont });
+    const gap=14*u, mainY=headerH+gap, mainH=portrait?h*0.46:h*0.44;
+    drawCover(photo, 44*u, mainY, w-88*u, mainH, b.dark);
+    const thumbsY=mainY+mainH+gap, thumbs=(gallery.length?gallery:[photo,photo,photo]).filter(Boolean);
+    const thumbW=(w-88*u-gap*2)/3, thumbH=Math.min(portrait?180*u:158*u, h*0.13);
+    thumbs.slice(0,3).forEach((img,i) => drawCover(img, 44*u+i*(thumbW+gap), thumbsY, thumbW, thumbH, "#ccc"));
+    const textY=thumbsY+thumbH+48*u;
+    drawFitText(text("subtitle"), w*0.5, textY, w-108*u, { size: 40*u, min: 22*u, color: b.dark, weight: 900, align: "center" });
+    drawWrappedText(text("details"), 70*u, textY+58*u, w-140*u, { size: 26*u, min: 16*u, color: "#555", family: b.bodyFont, weight: 700, lineHeight: 38*u, align: "center", maxLines: 3 });
+    ctx.fillStyle = b.blue; ctx.fillRect(0, h-92*u, w, 92*u);
+    drawFitText((text("cta")||"@esdoubs").toUpperCase(), 52*u, h-34*u, w-104*u, { size: 30*u, min: 16*u, color: "#fff", weight: 900, align: "center", family: b.accentFont, clip: false });
+  }
+
+
+  // ═══════════════════════════════════════════════════════════
+  //  HELPERS CANVAS
+  // ═══════════════════════════════════════════════════════════
 
   function drawCover(img, x, y, w, h, fallback) {
-    if (!img) {
-      ctx.fillStyle = fallback || "#d9dee8";
-      ctx.fillRect(x, y, w, h);
-      ctx.fillStyle = "rgba(255,255,255,0.18)";
-      for (let i = -h; i < w; i += 70) {
-        ctx.fillRect(x + i, y, 22, h * 2);
-      }
-      return;
-    }
-    const scale = Math.max(w / img.width, h / img.height);
-    const sw = img.width * scale;
-    const sh = img.height * scale;
-    ctx.drawImage(img, x + (w - sw) / 2, y + (h - sh) / 2, sw, sh);
+    if (!img) { ctx.fillStyle = fallback||"#d9dee8"; ctx.fillRect(x,y,w,h); ctx.fillStyle="rgba(255,255,255,0.12)"; for(let i=-h;i<w;i+=64){ctx.fillRect(x+i,y,20,h*2);} return; }
+    const s=Math.max(w/img.width,h/img.height), sw=img.width*s, sh=img.height*s;
+    ctx.drawImage(img, x+(w-sw)/2, y+(h-sh)/2, sw, sh);
   }
 
   function drawContain(img, x, y, w, h) {
     if (!img) return;
-    const scale = Math.min(w / img.width, h / img.height);
-    const sw = img.width * scale;
-    const sh = img.height * scale;
-    ctx.drawImage(img, x + (w - sw) / 2, y + (h - sh) / 2, sw, sh);
+    const s=Math.min(w/img.width,h/img.height), sw=img.width*s, sh=img.height*s;
+    ctx.drawImage(img, x+(w-sw)/2, y+(h-sh)/2, sw, sh);
   }
 
   function drawLogo(logo, x, y, size) {
-    ctx.save();
-    ctx.fillStyle = "rgba(255,255,255,0.96)";
-    roundRect(x, y, size, size, size * 0.08);
-    ctx.fill();
-    if (logo) {
-      drawContain(logo, x + size * 0.08, y + size * 0.08, size * 0.84, size * 0.84);
-    }
+    ctx.save(); ctx.fillStyle="rgba(255,255,255,0.96)";
+    ctx.shadowColor="rgba(0,0,0,0.18)"; ctx.shadowBlur=12*unit(size,size);
+    roundRect(x,y,size,size,size*0.1); ctx.fill();
+    ctx.shadowColor="transparent"; ctx.shadowBlur=0;
+    if(logo) drawContain(logo, x+size*0.1, y+size*0.1, size*0.8, size*0.8);
     ctx.restore();
   }
 
   function drawIconBadge(icon, x, y, size, fillColor, accentColor) {
-    ctx.save();
-    ctx.fillStyle = fillColor;
-    roundRect(x, y, size, size, size * 0.16);
-    ctx.fill();
-    ctx.fillStyle = accentColor;
-    ctx.fillRect(x, y + size * 0.78, size, size * 0.22);
-    if (icon) drawContain(icon, x + size * 0.18, y + size * 0.12, size * 0.64, size * 0.64);
+    ctx.save(); ctx.fillStyle=fillColor||"#ffffff"; roundRect(x,y,size,size,size*0.14); ctx.fill();
+    ctx.fillStyle=accentColor||state.brand.red; ctx.fillRect(x, y+size*0.76, size, size*0.24);
+    if(icon) drawContain(icon, x+size*0.16, y+size*0.1, size*0.68, size*0.62);
     ctx.restore();
   }
 
   function drawPartnerBadge(partnerLogo, w, h, u) {
     if (!partnerLogo) return;
-    const base = (state.partnerLogoSize || 120) * u;
-    const size = Math.min(base, w * 0.3, h * 0.3);
-    const padding = 28 * u;
-    let x = padding;
-    let y = h - size - padding;
-    switch (state.partnerLogoPosition) {
-      case "bottom-right":
-        x = w - size - padding;
-        y = h - size - padding;
-        break;
-      case "top-left":
-        x = padding;
-        y = padding;
-        break;
-      case "top-right":
-        x = w - size - padding;
-        y = padding;
-        break;
-      default:
-        x = padding;
-        y = h - size - padding;
-    }
+    const base=(state.partnerLogoSize||120)*u, size=Math.min(base,w*0.28,h*0.28), pad=26*u;
+    let x=pad, y=h-size-pad;
+    if(state.partnerLogoPosition==="bottom-right") x=w-size-pad;
+    else if(state.partnerLogoPosition==="top-left") y=pad;
+    else if(state.partnerLogoPosition==="top-right") { x=w-size-pad; y=pad; }
     ctx.save();
-    if (state.partnerLogoStyle === "overlay") {
-      // draw directly on the image without background
-      drawContain(partnerLogo, x, y, size, size);
-    } else {
-      ctx.fillStyle = "rgba(255,255,255,0.92)";
-      roundRect(x, y, size, size, 14 * u);
-      ctx.fill();
-      drawContain(partnerLogo, x + 12 * u, y + 12 * u, size - 24 * u, size - 24 * u);
-    }
+    if(state.partnerLogoStyle==="overlay") { drawContain(partnerLogo,x,y,size,size); }
+    else { ctx.fillStyle="rgba(255,255,255,0.93)"; ctx.shadowColor="rgba(0,0,0,0.14)"; ctx.shadowBlur=12*u; roundRect(x,y,size,size,12*u); ctx.fill(); ctx.shadowColor="transparent"; ctx.shadowBlur=0; drawContain(partnerLogo,x+10*u,y+10*u,size-20*u,size-20*u); }
     ctx.restore();
   }
 
-  function drawOverlay(x, y, w, h, color) {
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, w, h);
+  function drawOverlay(x,y,w,h,color) { ctx.fillStyle=color; ctx.fillRect(x,y,w,h); }
+
+  function drawBottomFade(w,h,strength) {
+    const g=ctx.createLinearGradient(0,h*0.3,0,h); g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(1,`rgba(0,0,0,${strength})`);
+    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
   }
 
-  function drawBottomFade(w, h, strength) {
-    const gradient = ctx.createLinearGradient(0, h * 0.35, 0, h);
-    gradient.addColorStop(0, "rgba(0,0,0,0)");
-    gradient.addColorStop(1, `rgba(0,0,0,${strength})`);
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, w, h);
-  }
-
-  function shade(hex, amount) {
-    const normalized = String(hex || "#000000").replace("#", "");
-    const value = parseInt(normalized.length === 3 ? normalized.replace(/(.)/g, "$1$1") : normalized, 16);
-    let r = (value >> 16) & 255;
-    let g = (value >> 8) & 255;
-    let b = value & 255;
-    const target = amount < 0 ? 0 : 255;
-    const p = Math.min(1, Math.abs(amount));
-    r = Math.round((target - r) * p + r);
-    g = Math.round((target - g) * p + g);
-    b = Math.round((target - b) * p + b);
-    return `rgb(${r},${g},${b})`;
-  }
-
-  function goldStops() {
-    const b = state.brand;
-    return [b.goldLight || shade(b.gold, 0.55), b.gold, b.goldDeep || shade(b.gold, -0.4)];
-  }
-
-  function gradientStops(spec) {
-    if (Array.isArray(spec)) return spec;
-    if (spec === "gold") return goldStops();
-    if (spec === "white") return ["#ffffff", "#e6ecf5"];
-    return goldStops();
-  }
-
-  // Vertical gradient fill usable on blocks (rectangles, ribbons, panels).
-  function blockGradient(x, y, w, h, topColor, bottomColor) {
-    const gradient = ctx.createLinearGradient(x, y, x, y + h);
-    gradient.addColorStop(0, topColor);
-    gradient.addColorStop(1, bottomColor);
-    return gradient;
-  }
-
-  function buildTextGradient(baselineY, size, spec) {
-    const top = baselineY - size;
-    const gradient = ctx.createLinearGradient(0, top, 0, baselineY + size * 0.15);
-    const stops = gradientStops(spec);
-    stops.forEach((color, index) => {
-      gradient.addColorStop(stops.length === 1 ? 0 : index / (stops.length - 1), color);
-    });
-    return gradient;
-  }
-
-  // Single line text with manual letter-spacing, optional stroke.
-  function drawSpacedText(value, x, y, options = {}) {
-    const clean = normalizeCanvasText(value);
-    if (!clean) return 0;
-    const size = options.size || 24;
-    const weight = options.weight || 800;
-    const family = options.family || state.brand.accentFont || state.brand.titleFont;
-    const spacing = options.spacing != null ? options.spacing : size * 0.12;
-    const align = options.align || "left";
-    ctx.save();
-    setFont(size, weight, family);
-    ctx.textAlign = "left";
-    ctx.textBaseline = options.baseline || "alphabetic";
-    const chars = Array.from(clean);
-    const total = chars.reduce(
-      (sum, ch, index) => sum + ctx.measureText(ch).width + (index < chars.length - 1 ? spacing : 0),
-      0,
-    );
-    let cursor = x;
-    if (align === "center") cursor = x - total / 2;
-    else if (align === "right") cursor = x - total;
-    if (options.stroke) {
-      ctx.lineJoin = "round";
-      ctx.lineWidth = options.strokeWidth || Math.max(2, size * 0.06);
-      ctx.strokeStyle = options.stroke;
-    }
-    chars.forEach((ch) => {
-      const chWidth = ctx.measureText(ch).width;
-      if (options.stroke) ctx.strokeText(ch, cursor, y);
-      ctx.fillStyle = options.color || state.brand.dark;
-      ctx.fillText(ch, cursor, y);
-      cursor += chWidth + spacing;
-    });
-    ctx.restore();
-    return total;
-  }
-
-  // Premium multi-line title: gradient fill, soft glow, optional stroke.
-  function drawPremiumText(value, x, y, maxWidth, options = {}) {
-    const textValue = normalizeCanvasText(value, true);
-    if (!textValue || maxWidth <= 0) return y;
-    const align = options.align || "left";
-    const family = options.family || state.brand.titleFont;
-    const weight = options.weight || 900;
-    const originalSize = options.size || 60;
-    const minSize = options.min || originalSize * 0.5;
-    const lineRatio = options.lineHeight ? options.lineHeight / originalSize : 1.02;
-    const maxLines = Math.max(1, options.maxLines || 3);
-    const maxHeight = options.maxHeight || Infinity;
-    let size = originalSize;
-    let lineHeight = size * lineRatio;
-    let wrapped = [];
-    // Allowed line count is fixed at the original size so shrinking never
-    // "unlocks" an extra line and leaves a mid-word break unresolved.
-    const ratio = Math.max(1, lineRatio);
-    const allowed = Number.isFinite(maxHeight)
-      ? Math.max(1, Math.min(maxLines, Math.floor(maxHeight / (originalSize * ratio))))
-      : maxLines;
-
-    ctx.save();
-    ctx.textAlign = align;
-    ctx.textBaseline = "alphabetic";
-    while (size >= minSize) {
-      setFont(size, weight, family);
-      lineHeight = Math.max(size * 1.0, size * lineRatio);
-      wrapped = wrapText(textValue, maxWidth);
-      if (wrapped.length <= allowed) break;
-      size -= 2;
-    }
-    setFont(size, weight, family);
-    lineHeight = Math.max(size * 1.0, size * lineRatio);
-    if (wrapped.length > allowed) {
-      wrapped = wrapped.slice(0, allowed);
-      wrapped[wrapped.length - 1] = truncateText(wrapped[wrapped.length - 1], maxWidth);
-    }
-
-    const boxX = resolveTextBoxX(x, maxWidth, align);
-    const drawX = xForAlign(boxX, maxWidth, align);
-    wrapped.forEach((line, index) => {
-      const lineY = y + index * lineHeight;
-      if (options.shadow !== false) {
-        ctx.shadowColor = options.shadow || "rgba(0,0,0,0.5)";
-        ctx.shadowBlur = options.shadowBlur != null ? options.shadowBlur : size * 0.16;
-        ctx.shadowOffsetY = size * 0.03;
-      }
-      if (options.stroke) {
-        ctx.lineJoin = "round";
-        ctx.lineWidth = options.strokeWidth || Math.max(3, size * 0.06);
-        ctx.strokeStyle = options.stroke;
-        ctx.strokeText(line, drawX, lineY);
-      }
-      ctx.fillStyle = options.gradient
-        ? buildTextGradient(lineY, size, options.gradient)
-        : options.color || state.brand.white;
-      ctx.fillText(line, drawX, lineY);
-      ctx.shadowColor = "transparent";
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetY = 0;
-    });
-    ctx.restore();
-    return y + wrapped.length * lineHeight;
-  }
-
-  // Banner ribbon with folded tails and a gradient bar.
-  function drawRibbon(x, y, w, h, options = {}) {
-    const color = options.color || state.brand.red;
-    const tailColor = options.tailColor || shade(color, -0.28);
-    const tail = options.tail != null ? options.tail : Math.min(h * 0.9, w * 0.12);
-    const notch = options.notch != null ? options.notch : Math.min(h * 0.5, tail * 0.6);
-    ctx.save();
-    if (options.tails !== false && tail > 0) {
-      ctx.fillStyle = tailColor;
-      ctx.beginPath();
-      ctx.moveTo(x, y + h * 0.12);
-      ctx.lineTo(x - tail, y + h * 0.12);
-      ctx.lineTo(x - tail + notch, y + h * 0.5);
-      ctx.lineTo(x - tail, y + h * 0.88);
-      ctx.lineTo(x, y + h * 0.88);
-      ctx.closePath();
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(x + w, y + h * 0.12);
-      ctx.lineTo(x + w + tail, y + h * 0.12);
-      ctx.lineTo(x + w + tail - notch, y + h * 0.5);
-      ctx.lineTo(x + w + tail, y + h * 0.88);
-      ctx.lineTo(x + w, y + h * 0.88);
-      ctx.closePath();
-      ctx.fill();
-    }
-    ctx.fillStyle = blockGradient(
-      x,
-      y,
-      w,
-      h,
-      options.gradientTop || shade(color, 0.14),
-      options.gradientBottom || shade(color, -0.14),
-    );
-    ctx.fillRect(x, y, w, h);
-    ctx.restore();
-  }
-
-  function drawFooterBrand(w, h, logo) {
-    const u = unit(w, h);
-    const b = state.brand;
-    const mention = text("footer");
-    if (!mention) return;
-    drawSpacedText(mention.toUpperCase(), w / 2, h - 30 * u, {
-      size: 22 * u,
-      weight: 800,
-      color: b.gold,
-      family: b.accentFont,
-      align: "center",
-      spacing: 4 * u,
-    });
-  }
-
-  function normalizeCanvasText(value, preserveBreaks = false) {
-    const source = String(value || "").replace(/\r/g, "");
-    if (preserveBreaks) {
-      return source
-        .split("\n")
-        .map((line) => line.replace(/\s+/g, " ").trim())
-        .join("\n")
-        .trim();
-    }
-    return source.replace(/\s+/g, " ").trim();
-  }
-
-  function resolveTextBoxX(x, maxWidth, align) {
-    if (align === "center" && x + maxWidth > canvas.width * 1.04 && x - maxWidth / 2 >= 0) {
-      return x - maxWidth / 2;
-    }
-    if (align === "right" && x - maxWidth >= 0) {
-      return x - maxWidth;
-    }
-    return x;
-  }
-
-  function clipTextBox(x, y, maxWidth, maxHeight, size, align) {
-    const boxX = resolveTextBoxX(x, maxWidth, align);
-    const height = Math.max(size * 1.25, maxHeight || size * 1.35);
-    ctx.beginPath();
-    ctx.rect(boxX, y - size, maxWidth, height);
-    ctx.clip();
-    return boxX;
-  }
-
-  function truncateText(value, maxWidth) {
-    const clean = normalizeCanvasText(value);
-    if (!clean || maxWidth <= 0) return "";
-    if (ctx.measureText(clean).width <= maxWidth) return clean;
-    if (ctx.measureText(ELLIPSIS).width > maxWidth) return "";
-
-    const chars = Array.from(clean);
-    let low = 0;
-    let high = chars.length;
-    let best = "";
-    while (low <= high) {
-      const mid = Math.floor((low + high) / 2);
-      const candidate = `${chars.slice(0, mid).join("").trimEnd()}${ELLIPSIS}`;
-      if (ctx.measureText(candidate).width <= maxWidth) {
-        best = candidate;
-        low = mid + 1;
-      } else {
-        high = mid - 1;
-      }
-    }
-    return best;
+  function blockGradient(x,y,w,h,topColor,bottomColor) {
+    const g=ctx.createLinearGradient(x,y,x,y+h); g.addColorStop(0,topColor); g.addColorStop(1,bottomColor); return g;
   }
 
   function drawPill(value, x, y, w, h, fillColor, color) {
-    if (w <= 0 || h <= 0) return;
-    ctx.save();
-    ctx.fillStyle = fillColor;
-    roundRect(x, y, w, h, Math.min(8, h * 0.18));
-    ctx.fill();
-    drawWrappedText(value, x + h * 0.32, y + h * 0.64, w - h * 0.64, {
-      size: h * 0.38,
-      min: h * 0.24,
-      color,
-      weight: 900,
-      maxLines: 1,
-      maxHeight: h * 0.52,
-      align: "center",
-    });
+    if(w<=0||h<=0) return;
+    ctx.save(); ctx.fillStyle=fillColor; roundRect(x,y,w,h,Math.min(8,h*0.2)); ctx.fill();
+    drawFitText(value, x+h*0.3, y+h*0.68, w-h*0.6, { size:h*0.4, min:h*0.26, color, weight:900, maxHeight:h*0.54, align:"center" });
     ctx.restore();
   }
 
-  function drawFitText(value, x, y, maxWidth, options) {
-    const align = options.align || "left";
-    let textValue = normalizeCanvasText(value);
-    if (!textValue || maxWidth <= 0) return;
-
-    let size = Math.min(options.size, options.maxHeight ? options.maxHeight * 0.86 : options.size);
-    const minSize = options.min || size * 0.52;
-    const family = options.family || state.brand.titleFont;
-    const weight = options.weight || 800;
-    const maxHeight = options.maxHeight || size * 1.25;
-
-    ctx.save();
-    ctx.textAlign = align;
-    ctx.textBaseline = "alphabetic";
-    while (size > minSize) {
-      setFont(size, weight, family);
-      if (ctx.measureText(textValue).width <= maxWidth) break;
-      size -= 2;
-    }
-    setFont(size, weight, family);
-    if (ctx.measureText(textValue).width > maxWidth) {
-      textValue = truncateText(textValue, maxWidth);
-    }
-
-    if (options.clip !== false) {
-      clipTextBox(x, y, maxWidth, maxHeight, size, align);
-    }
-
-    const boxX = resolveTextBoxX(x, maxWidth, align);
-    const drawX = xForAlign(boxX, maxWidth, align);
-    if (options.stroke && textValue) {
-      ctx.lineWidth = Math.max(3, size * 0.08);
-      ctx.strokeStyle = options.stroke;
-      ctx.strokeText(textValue, drawX, y, maxWidth);
-    }
-    ctx.fillStyle = options.color || state.brand.dark;
-    ctx.fillText(textValue, drawX, y, maxWidth);
-    ctx.restore();
+  function roundRect(x,y,w,h,r) {
+    const rad=Math.min(r,w/2,h/2);
+    ctx.beginPath(); ctx.moveTo(x+rad,y); ctx.lineTo(x+w-rad,y); ctx.quadraticCurveTo(x+w,y,x+w,y+rad); ctx.lineTo(x+w,y+h-rad); ctx.quadraticCurveTo(x+w,y+h,x+w-rad,y+h); ctx.lineTo(x+rad,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-rad); ctx.lineTo(x,y+rad); ctx.quadraticCurveTo(x,y,x+rad,y); ctx.closePath();
   }
 
-  function drawWrappedText(value, x, y, maxWidth, options) {
-    const textValue = normalizeCanvasText(value, true);
-    if (!textValue || maxWidth <= 0) return;
 
-    const align = options.align || "left";
-    const family = options.family || state.brand.titleFont;
-    const weight = options.weight || 700;
-    const originalSize = options.size || 24;
-    const minSize = options.min || originalSize * 0.52;
-    const lineRatio = options.lineHeight ? options.lineHeight / originalSize : 1.18;
-    const maxLines = Math.max(1, options.maxLines || 8);
-    const maxHeight = options.maxHeight || Infinity;
-    let size = originalSize;
-    let lineHeight = size * lineRatio;
-    let visibleLineCount = maxLines;
-    let wrapped = [];
+  // ═══════════════════════════════════════════════════════════
+  //  HELPERS TEXTE
+  // ═══════════════════════════════════════════════════════════
 
-    ctx.save();
-    ctx.textAlign = align;
-    ctx.textBaseline = "alphabetic";
-    ctx.fillStyle = options.color || state.brand.dark;
-
-    while (size >= minSize) {
-      setFont(size, weight, family);
-      lineHeight = Math.max(size * 1.05, size * lineRatio);
-      const heightLimit = Number.isFinite(maxHeight) ? Math.max(1, Math.floor((maxHeight + size * 0.18) / lineHeight)) : maxLines;
-      visibleLineCount = Math.max(1, Math.min(maxLines, heightLimit));
-      wrapped = wrapText(textValue, maxWidth);
-      if (wrapped.length <= visibleLineCount) break;
-      size -= 2;
-    }
-
-    setFont(size, weight, family);
-    lineHeight = Math.max(size * 1.05, size * lineRatio);
-    const heightLimit = Number.isFinite(maxHeight) ? Math.max(1, Math.floor((maxHeight + size * 0.18) / lineHeight)) : maxLines;
-    visibleLineCount = Math.max(1, Math.min(maxLines, heightLimit));
-
-    if (wrapped.length > visibleLineCount) {
-      wrapped = wrapped.slice(0, visibleLineCount);
-      wrapped[wrapped.length - 1] = truncateText(wrapped[wrapped.length - 1], maxWidth);
-    } else {
-      wrapped = wrapped.map((line) => truncateText(line, maxWidth));
-    }
-
-    const boxX = options.clip === false ? resolveTextBoxX(x, maxWidth, align) : clipTextBox(x, y, maxWidth, Number.isFinite(maxHeight) ? maxHeight : visibleLineCount * lineHeight, size, align);
-    const drawX = xForAlign(boxX, maxWidth, align);
-    wrapped.forEach((line, index) => {
-      ctx.fillText(line, drawX, y + index * lineHeight, maxWidth);
-    });
-    ctx.restore();
+  function normalizeCanvasText(v, keepBreaks) {
+    const s=String(v||"").replace(/\r/g,"");
+    if(keepBreaks) return s.split("\n").map((l)=>l.replace(/\s+/g," ").trim()).join("\n").trim();
+    return s.replace(/\s+/g," ").trim();
   }
 
-  function wrapText(value, maxWidth) {
-    const output = [];
-    const paragraphs = String(value || "").split("\n");
-    paragraphs.forEach((paragraph) => {
-      const words = paragraph.trim().split(/\s+/).filter(Boolean);
-      if (!words.length) return;
-      let line = "";
-      words.forEach((word) => {
-        const candidate = line ? `${line} ${word}` : word;
-        if (ctx.measureText(candidate).width <= maxWidth) {
-          line = candidate;
-          return;
-        }
-        if (line) output.push(line);
-        if (ctx.measureText(word).width <= maxWidth) {
-          line = word;
-          return;
-        }
-        const chunks = breakLongWord(word, maxWidth);
-        output.push(...chunks.slice(0, -1));
-        line = chunks[chunks.length - 1] || "";
-      });
-      if (line) output.push(line);
+  function setFont(size, weight, family) { ctx.font=`${weight} ${Math.max(1,Math.round(size))}px ${family||state.brand.titleFont}`; }
+
+  function truncateText(v, maxWidth) {
+    const clean=normalizeCanvasText(v); if(!clean||maxWidth<=0) return "";
+    if(ctx.measureText(clean).width<=maxWidth) return clean;
+    if(ctx.measureText(ELLIPSIS).width>maxWidth) return "";
+    const chars=Array.from(clean); let lo=0,hi=chars.length,best="";
+    while(lo<=hi){ const mid=Math.floor((lo+hi)/2), cand=`${chars.slice(0,mid).join("").trimEnd()}${ELLIPSIS}`; if(ctx.measureText(cand).width<=maxWidth){best=cand;lo=mid+1;}else hi=mid-1; }
+    return best;
+  }
+
+  function wrapText(v, maxWidth) {
+    const out=[];
+    String(v||"").split("\n").forEach((para)=>{
+      const words=para.trim().split(/\s+/).filter(Boolean); if(!words.length) return;
+      let line="";
+      words.forEach((w)=>{ const cand=line?`${line} ${w}`:w; if(ctx.measureText(cand).width<=maxWidth){line=cand;return;} if(line)out.push(line); if(ctx.measureText(w).width<=maxWidth){line=w;return;} const chunks=breakLongWord(w,maxWidth); out.push(...chunks.slice(0,-1)); line=chunks[chunks.length-1]||""; });
+      if(line) out.push(line);
     });
-    return output;
+    return out;
   }
 
   function breakLongWord(word, maxWidth) {
-    const chunks = [];
-    let chunk = "";
-    Array.from(String(word || "")).forEach((char) => {
-      const candidate = chunk + char;
-      if (ctx.measureText(candidate).width <= maxWidth || !chunk) {
-        chunk = candidate;
-        return;
-      }
-      chunks.push(chunk);
-      chunk = char;
-    });
-    if (chunk) chunks.push(chunk);
-    return chunks;
+    const chunks=[]; let chunk="";
+    Array.from(String(word||"")).forEach((c)=>{ const cand=chunk+c; if(ctx.measureText(cand).width<=maxWidth||!chunk){chunk=cand;return;} chunks.push(chunk); chunk=c; });
+    if(chunk) chunks.push(chunk); return chunks;
   }
 
-  function xForAlign(x, maxWidth, align) {
-    if (align === "center") return x + maxWidth / 2;
-    if (align === "right") return x + maxWidth;
+  function resolveTextBoxX(x,maxWidth,align) {
+    if(align==="center"&&x+maxWidth>canvas.width*1.04&&x-maxWidth/2>=0) return x-maxWidth/2;
+    if(align==="right"&&x-maxWidth>=0) return x-maxWidth;
     return x;
   }
 
-  function setFont(size, weight, family) {
-    ctx.font = `${weight} ${Math.max(1, Math.round(size))}px ${family}`;
+  function xForAlign(x,maxWidth,align) { if(align==="center") return x+maxWidth/2; if(align==="right") return x+maxWidth; return x; }
+
+  function clipTextBox(x,y,maxWidth,maxHeight,size,align) {
+    const bx=resolveTextBoxX(x,maxWidth,align);
+    ctx.beginPath(); ctx.rect(bx, y-size, maxWidth, Math.max(size*1.25, maxHeight||size*1.35)); ctx.clip();
+    return bx;
   }
 
-  function roundRect(x, y, w, h, r) {
-    const radius = Math.min(r, w / 2, h / 2);
-    ctx.beginPath();
-    ctx.moveTo(x + radius, y);
-    ctx.lineTo(x + w - radius, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
-    ctx.lineTo(x + w, y + h - radius);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
-    ctx.lineTo(x + radius, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
-    ctx.lineTo(x, y + radius);
-    ctx.quadraticCurveTo(x, y, x + radius, y);
-    ctx.closePath();
+  function drawFitText(v, x, y, maxWidth, options) {
+    const align=options.align||"left", family=options.family||state.brand.titleFont, weight=options.weight||800;
+    let txt=normalizeCanvasText(v); if(!txt||maxWidth<=0) return;
+    let size=Math.min(options.size, options.maxHeight?options.maxHeight*0.86:options.size);
+    const minSize=options.min||size*0.52, maxH=options.maxHeight||size*1.25;
+    ctx.save(); ctx.textAlign=align; ctx.textBaseline="alphabetic";
+    while(size>minSize){ setFont(size,weight,family); if(ctx.measureText(txt).width<=maxWidth) break; size-=2; }
+    setFont(size,weight,family);
+    if(ctx.measureText(txt).width>maxWidth) txt=truncateText(txt,maxWidth);
+    if(options.clip!==false) clipTextBox(x,y,maxWidth,maxH,size,align);
+    const bx=resolveTextBoxX(x,maxWidth,align), dx=xForAlign(bx,maxWidth,align);
+    if(options.stroke&&txt){ ctx.lineJoin="round"; ctx.lineWidth=Math.max(3,size*0.08); ctx.strokeStyle=options.stroke; ctx.strokeText(txt,dx,y,maxWidth); }
+    ctx.fillStyle=options.color||state.brand.dark; ctx.fillText(txt,dx,y,maxWidth);
+    ctx.restore();
   }
 
-  function fill(color) {
-    ctx.fillStyle = color;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  function drawWrappedText(v, x, y, maxWidth, options) {
+    const txt=normalizeCanvasText(v,true); if(!txt||maxWidth<=0) return;
+    const align=options.align||"left", family=options.family||state.brand.titleFont, weight=options.weight||700;
+    const origSize=options.size||24, minSize=options.min||origSize*0.52;
+    const lineRatio=options.lineHeight?options.lineHeight/origSize:1.18;
+    const maxLines=Math.max(1,options.maxLines||8), maxH=options.maxHeight||Infinity;
+    let size=origSize, lineH=size*lineRatio, vis=maxLines, wrapped=[];
+    ctx.save(); ctx.textAlign=align; ctx.textBaseline="alphabetic"; ctx.fillStyle=options.color||state.brand.dark;
+    while(size>=minSize){ setFont(size,weight,family); lineH=Math.max(size*1.05,size*lineRatio); const hlim=Number.isFinite(maxH)?Math.max(1,Math.floor((maxH+size*0.18)/lineH)):maxLines; vis=Math.max(1,Math.min(maxLines,hlim)); wrapped=wrapText(txt,maxWidth); if(wrapped.length<=vis) break; size-=2; }
+    setFont(size,weight,family); lineH=Math.max(size*1.05,size*lineRatio);
+    const hlim=Number.isFinite(maxH)?Math.max(1,Math.floor((maxH+size*0.18)/lineH)):maxLines; vis=Math.max(1,Math.min(maxLines,hlim));
+    if(wrapped.length>vis){ wrapped=wrapped.slice(0,vis); wrapped[wrapped.length-1]=truncateText(wrapped[wrapped.length-1],maxWidth); }
+    else { wrapped=wrapped.map((l)=>truncateText(l,maxWidth)); }
+    const bx=options.clip===false?resolveTextBoxX(x,maxWidth,align):clipTextBox(x,y,maxWidth,Number.isFinite(maxH)?maxH:vis*lineH,size,align);
+    const dx=xForAlign(bx,maxWidth,align);
+    wrapped.forEach((line,i)=>{ ctx.fillText(line,dx,y+i*lineH,maxWidth); });
+    ctx.restore();
+  }
+
+
+  // ═══════════════════════════════════════════════════════════
+  //  HELPERS UTILITAIRES
+  // ═══════════════════════════════════════════════════════════
+
+  function unit(w,h) { return Math.min(w,h)/1080; }
+  function text(key) { return state.fields[key]||""; }
+  function lines(v) { return String(v||"").split(/\n/).map((l)=>l.trim()).filter(Boolean); }
+
+  function limitVisibleLines(items, maxItems) {
+    const limit=Math.max(1,Math.floor(maxItems||1)); if(items.length<=limit) return items;
+    const vis=items.slice(0,limit), hidden=items.length-limit+1;
+    vis[vis.length-1]=`+ ${hidden} autre${hidden>1?"s":""}${ELLIPSIS}`; return vis;
   }
 
   function rgba(hex, alpha) {
-    const normalized = hex.replace("#", "");
-    const value = parseInt(normalized.length === 3 ? normalized.replace(/(.)/g, "$1$1") : normalized, 16);
-    const r = (value >> 16) & 255;
-    const g = (value >> 8) & 255;
-    const b = value & 255;
-    return `rgba(${r},${g},${b},${alpha})`;
-  }
-
-  function unit(w, h) {
-    return Math.min(w, h) / 1080;
-  }
-
-  function text(key) {
-    return state.fields[key] || "";
-  }
-
-  function lines(value) {
-    return String(value || "")
-      .split(/\n/)
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-
-  function limitVisibleLines(items, maxItems) {
-    const limit = Math.max(1, Math.floor(maxItems || 1));
-    if (items.length <= limit) return items;
-    const visible = items.slice(0, limit);
-    const hidden = items.length - limit + 1;
-    visible[visible.length - 1] = `+ ${hidden} autre${hidden > 1 ? "s" : ""}${ELLIPSIS}`;
-    return visible;
+    const n=String(hex||"#000").replace("#",""), v=parseInt(n.length===3?n.replace(/(.)/g,"$1$1"):n,16);
+    return `rgba(${(v>>16)&255},${(v>>8)&255},${v&255},${alpha})`;
   }
 
   function loadImage(src) {
-    if (!src) return Promise.resolve(null);
-    if (imageCache.has(src)) return Promise.resolve(imageCache.get(src));
-    return new Promise((resolve) => {
-      const image = new Image();
-      image.onload = () => {
-        imageCache.set(src, image);
-        resolve(image);
-      };
-      image.onerror = () => {
-        console.warn("Image introuvable", src);
-        resolve(null);
-      };
-      image.src = src;
-    });
+    if(!src) return Promise.resolve(null);
+    if(imageCache.has(src)) return Promise.resolve(imageCache.get(src));
+    return new Promise((resolve)=>{ const img=new Image(); img.onload=()=>{imageCache.set(src,img);resolve(img);}; img.onerror=()=>{console.warn("Image introuvable",src);resolve(null);}; img.src=src; });
   }
 
-  function readJson(key, fallback) {
-    try {
-      const value = localStorage.getItem(key);
-      return value ? JSON.parse(value) : fallback;
-    } catch (error) {
-      console.warn(error);
-      return fallback;
-    }
+  function readJson(key,fallback) { try{const v=localStorage.getItem(key);return v?JSON.parse(v):fallback;}catch(e){console.warn(e);return fallback;} }
+  function getTemplate(id) { return data.templates.find((t)=>t.id===id)||data.templates[0]; }
+  function getCategory(id) { return data.categories.find((c)=>c.id===id)||data.categories[0]; }
+  function getFormat(id)   { return data.formats.find((f)=>f.id===id)||data.formats[0]; }
+
+  function makeFilename(ext) {
+    const t=getTemplate(state.templateId), f=getFormat(state.formatId), d=new Date().toISOString().slice(0,10);
+    return `${slug(t.name)}-${f.id}-${d}.${ext}`;
   }
 
-  function getTemplate(id) {
-    return data.templates.find((template) => template.id === id) || data.templates[0];
+  function slug(v) { return String(v).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,""); }
+  function setStatus(v) { els.autosaveState.textContent=v; }
+  function escapeHtml(v) { return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+  function downloadUrl(url,filename) { const a=document.createElement("a"); a.href=url; a.download=filename; a.rel="noopener"; document.body.appendChild(a); a.click(); a.remove(); }
+  function downloadBlob(blob,filename) { const url=URL.createObjectURL(blob); downloadUrl(url,filename); setTimeout(()=>URL.revokeObjectURL(url),1000); }
+
+  // ═══════════════════════════════════════════════════════════
+  //  EXPORT
+  // ═══════════════════════════════════════════════════════════
+
+  function exportImage(type,ext) {
+    const filename=makeFilename(ext);
+    if(canvas.toBlob){ canvas.toBlob((blob)=>{ if(!blob){setStatus("Export impossible");return;} downloadBlob(blob,filename); setStatus(`${ext.toUpperCase()} exporté`); },type,type==="image/jpeg"?1:undefined); return; }
+    try{ const url=canvas.toDataURL(type,type==="image/jpeg"?1:undefined); downloadUrl(url,filename); setStatus(`${ext.toUpperCase()} exporté`); }catch(e){ console.error(e); setStatus("Export bloqué par le navigateur"); }
   }
 
-  function getCategory(id) {
-    return data.categories.find((category) => category.id === id) || data.categories[0];
+  function exportPdf() {
+    try{ const blob=createPdfFromCanvas(canvas); downloadBlob(blob,makeFilename("pdf")); setStatus("PDF exporté"); }catch(e){ console.error(e); setStatus("PDF impossible à générer"); }
   }
 
-  function getFormat(id) {
-    return data.formats.find((format) => format.id === id) || data.formats[0];
+  function createPdfFromCanvas(src) {
+    const b64=src.toDataURL("image/jpeg",1).split(",")[1], bin=atob(b64);
+    const bytes=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    const enc=new TextEncoder(), parts=[], offsets=[0]; let off=0;
+    const add=(t)=>{const b=enc.encode(t);parts.push(b);off+=b.length;};
+    const addB=(b)=>{parts.push(b);off+=b.length;};
+    const bObj=(n)=>{offsets[n]=off;add(`${n} 0 obj\n`);};
+    const eObj=()=>add("\nendobj\n");
+    const W=src.width, H=src.height, cnt=`q\n${W} 0 0 ${H} 0 0 cm\n/Im0 Do\nQ\n`;
+    add("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n");
+    bObj(1); add("<< /Type /Catalog /Pages 2 0 R >>"); eObj();
+    bObj(2); add("<< /Type /Pages /Kids [3 0 R] /Count 1 >>"); eObj();
+    bObj(3); add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`); eObj();
+    bObj(4); add(`<< /Type /XObject /Subtype /Image /Width ${W} /Height ${H} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${bytes.length} >>\nstream\n`); addB(bytes); add("\nendstream"); eObj();
+    bObj(5); add(`<< /Length ${enc.encode(cnt).length} >>\nstream\n${cnt}endstream`); eObj();
+    const xOff=off; add("xref\n0 6\n0000000000 65535 f \n");
+    for(let i=1;i<=5;i++) add(`${String(offsets[i]).padStart(10,"0")} 00000 n \n`);
+    add(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xOff}\n%%EOF`);
+    return new Blob(parts,{type:"application/pdf"});
   }
 
-  function makeFilename(extension) {
-    const template = getTemplate(state.templateId);
-    const format = getFormat(state.formatId);
-    const date = new Date().toISOString().slice(0, 10);
-    return `${slug(template.name)}-${format.id}-${date}.${extension}`;
-  }
-
-  function slug(value) {
-    return String(value)
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-  }
-
-  function downloadUrl(url, filename) {
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = filename;
-    anchor.rel = "noopener";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-  }
-
-  function downloadBlob(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    downloadUrl(url, filename);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
-  function setStatus(value) {
-    els.autosaveState.textContent = value;
-  }
-
-  function escapeHtml(value) {
-    return String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
+  // ─────────────────────────────────────────────
   init();
+
 })();
