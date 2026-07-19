@@ -9,14 +9,14 @@
     type,
   });
 
-  const matchFields = (home, away, title = "NEXT GAME") => [
+  const matchFields = (home, away, title = "Prochain Match") => [
     field("title", "Titre", title),
-    field("competition", "Compétition", "J8 Régional 3"),
+    field("competition", "Compétition", "J1 Régional 3"),
     field("homeTeam", "Équipe domicile", home),
     field("awayTeam", "Équipe extérieur", away),
     field("date", "Date", "Dimanche 8 février"),
-    field("time", "Heure", "12h00"),
-    field("location", "Lieu", "Complexe Saint-Claude"),
+    field("time", "Heure", "18h00"),
+    field("location", "Lieu", "Stade Synthétique de Doubs"),
     field("footer", "Mention courte", "Allez l'ESD"),
   ];
 

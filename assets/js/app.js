@@ -49,6 +49,7 @@
     exportPng           : document.getElementById("exportPng"),
     exportJpg           : document.getElementById("exportJpg"),
     exportPdf           : document.getElementById("exportPdf"),
+    resetTemplate       : document.getElementById("resetTemplate"),
   };
 
   const imageCache = new Map();
@@ -357,24 +358,71 @@
     ctx.beginPath(); ctx.moveTo(sx - diag, sy); ctx.lineTo(w, sy); ctx.lineTo(w, h); ctx.lineTo(sx + diag, h); ctx.closePath(); ctx.fill();
   }
 
+  // ── Constantes de mise en page (base 1080 px, multipliées par u) ──
+  const L = {
+    PAD:    52,   // marge latérale générale
+    HDR_H: 148,   // hauteur de la zone en-tête (logo + icône)
+    FOOT_H: 132,  // hauteur banderole bas
+    PILL_H:  48,  // hauteur pill/capsule
+    ICON:    80,  // taille badge icône HG
+    LOGO:   104,  // taille badge logo HD
+  };
+
   function drawHeader(icon, logo, w, h) {
     const u = unit(w, h);
-    drawIconBadge(icon, 44 * u, 38 * u, 76 * u, "#ffffff", state.brand.red);
-    drawLogo(logo, w - 136 * u, 34 * u, 100 * u);
+    const pad  = L.PAD  * u;
+    const topY = 30 * u;
+    const iconSz = L.ICON * u;
+    const logoSz = L.LOGO * u;
+    // ombre portée globale pour les badges
+    ctx.save();
+    ctx.shadowColor  = "rgba(0,0,0,0.28)";
+    ctx.shadowBlur   = 14 * u;
+    ctx.shadowOffsetY = 4 * u;
+    drawIconBadge(icon, pad, topY, iconSz, "#ffffff", state.brand.red);
+    drawLogo(logo, w - logoSz - pad, topY, logoSz);
+    ctx.restore();
   }
 
-  function drawCompPill(value, x, y, maxW, h) {
-    drawPill(value, x, y, Math.min(maxW, 480 * unit(canvas.width, canvas.height)), h, state.brand.red, "#ffffff");
+  function drawCompPill(value, x, y, maxW, pillH) {
+    if (!value) return;
+    const u   = unit(canvas.width, canvas.height);
+    const ph  = pillH || L.PILL_H * u;
+    const pw  = Math.min(maxW, 560 * u);
+    drawPill(value, x, y, pw, ph, state.brand.red, "#ffffff");
   }
 
   function drawFooterBand(lineArr, w, h, color) {
     const u = unit(w, h), b = state.brand;
-    const bandH = 130 * u, y = h - bandH;
-    ctx.fillStyle = color || b.red; ctx.fillRect(0, y, w, bandH);
-    ctx.fillStyle = b.gold; ctx.fillRect(0, y, w, Math.max(3, 5 * u));
-    const main = lineArr[0] || "", sub = lineArr[1] || "";
-    if (main) drawFitText(main.toUpperCase(), 52 * u, y + bandH * 0.52, w - 104 * u, { size: bandH * 0.34, min: 18 * u, color: "#ffffff", weight: 900, align: "center", family: b.accentFont, clip: false });
-    if (sub)  drawFitText(sub, 52 * u, y + bandH * 0.82, w - 104 * u, { size: bandH * 0.24, min: 14 * u, color: "rgba(255,255,255,0.82)", weight: 700, align: "center", family: b.bodyFont, clip: false });
+    const bandH = L.FOOT_H * u;
+    const y     = h - bandH;
+    const pad   = L.PAD * u;
+    const bg    = color || b.dark;
+
+    // Fond uni solide
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, y, w, bandH);
+
+    // Liseré or haut (3–5 px selon résolution)
+    const lH = Math.max(3, Math.round(4 * u));
+    ctx.fillStyle = b.gold;
+    ctx.fillRect(0, y, w, lH);
+
+    const main = (lineArr[0] || "").toUpperCase();
+    const sub  =  lineArr[1] || "";
+
+    if (main) {
+      drawFitText(main, pad, y + bandH * 0.50, w - pad * 2, {
+        size: bandH * 0.33, min: 16 * u, color: "#ffffff", weight: 900,
+        align: "center", family: b.accentFont, clip: false,
+      });
+    }
+    if (sub) {
+      drawFitText(sub, pad, y + bandH * 0.82, w - pad * 2, {
+        size: bandH * 0.22, min: 12 * u, color: "rgba(255,255,255,0.75)", weight: 600,
+        align: "center", family: b.bodyFont, clip: false,
+      });
+    }
   }
 
   function drawVsBrush(cx, cy, w, h) {
@@ -397,87 +445,225 @@
   // ═══════════════════════════════════════════════════════════
 
   function renderMatch({ format, photo, logo, icon, homeLogo, awayLogo }) {
-    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
-    drawBg(photo, w, h, 0.18);
-    drawDiagonalSplit(w, h, rgba(b.red, 0.93), rgba(b.blue, 0.88), portrait ? 0.52 : 0.48, 0.5, 90 * u);
-    drawBottomFade(w, h, 0.5);
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), p = h >= w;
+    // 1. Fond photo + assombrissement léger
+    drawBg(photo, w, h, 0.20);
+    // 2. Split diagonal rouge/bleu couvrant la moitié basse
+    const splitY = p ? 0.50 : 0.46;
+    drawDiagonalSplit(w, h, rgba(b.red, 0.94), rgba(b.blue, 0.90), splitY, 0.5, 88 * u);
+    // 3. Fondu bas doux
+    drawBottomFade(w, h, 0.45);
+    // 4. En-tête
     drawHeader(icon, logo, w, h);
-    const titleX = 48 * u, titleW = w * 0.58;
-    drawFitText(text("title").toUpperCase(), titleX, 172 * u, titleW, { size: portrait ? 96 * u : 72 * u, min: 44 * u, maxHeight: 112 * u, color: "#fff", weight: 900, stroke: rgba(b.dark, 0.4) });
-    drawCompPill(text("competition"), titleX, 224 * u, titleW, 46 * u);
-    const panelY = portrait ? h * 0.54 : h * 0.50, logoSize = portrait ? 148 * u : 126 * u;
-    const teamSize = portrait ? 46 * u : 38 * u, teamW = w * 0.34;
-    const leftCX = w * 0.22, rightCX = w * 0.78;
-    ctx.save(); ctx.shadowColor = "rgba(255,255,255,0.22)"; ctx.shadowBlur = 20 * u;
-    if (homeLogo) drawContain(homeLogo, leftCX - logoSize / 2, panelY + 16 * u, logoSize, logoSize);
-    else { ctx.fillStyle = "rgba(255,255,255,0.18)"; roundRect(leftCX - logoSize / 2, panelY + 16 * u, logoSize, logoSize, 18 * u); ctx.fill(); }
-    if (awayLogo) drawContain(awayLogo, rightCX - logoSize / 2, panelY + 16 * u, logoSize, logoSize);
-    else { ctx.fillStyle = "rgba(255,255,255,0.18)"; roundRect(rightCX - logoSize / 2, panelY + 16 * u, logoSize, logoSize, 18 * u); ctx.fill(); }
+    // 5. Titre + pill — décalé sous l'en-tête (L.HDR_H) avec marge
+    const titleX = L.PAD * u;
+    const titleW = w * 0.60;
+    const titleY = (L.HDR_H + 18) * u;
+    drawFitText(text("title").toUpperCase(), titleX, titleY, titleW, {
+      size: p ? 88 * u : 68 * u, min: 40 * u, maxHeight: 104 * u,
+      color: "#fff", weight: 900,
+      stroke: "rgba(0,0,0,0.38)",
+    });
+    const pillY = titleY + (p ? 26 : 22) * u;
+    drawCompPill(text("competition"), titleX, pillY, titleW, L.PILL_H * u);
+    // 6. Zone logos équipes dans les panneaux
+    const panelY   = h * splitY + 6 * u;
+    const logoSz   = p ? 150 * u : 128 * u;
+    const teamSz   = p ? 44 * u  : 36 * u;
+    const teamW    = w * 0.36;
+    const leftCX   = w * 0.22;
+    const rightCX  = w * 0.78;
+    ctx.save();
+    ctx.shadowColor = "rgba(255,255,255,0.30)"; ctx.shadowBlur = 22 * u;
+    const logoY = panelY + 10 * u;
+    // Placeholder si pas de logo : cercle semi-transparent
+    [{ cx: leftCX, logo: homeLogo }, { cx: rightCX, logo: awayLogo }].forEach(({ cx, logo: lg }) => {
+      if (lg) {
+        drawContain(lg, cx - logoSz / 2, logoY, logoSz, logoSz);
+      } else {
+        ctx.fillStyle = "rgba(255,255,255,0.15)";
+        ctx.beginPath(); ctx.arc(cx, logoY + logoSz / 2, logoSz * 0.46, 0, Math.PI * 2); ctx.fill();
+      }
+    });
     ctx.restore();
-    drawWrappedText(text("homeTeam").toUpperCase(), leftCX - teamW / 2,  panelY + logoSize + 20 * u + teamSize, teamW, { size: teamSize, min: 22 * u, color: "#fff", weight: 900, align: "center", lineHeight: teamSize * 1.1, maxLines: 2, family: b.accentFont });
-    drawWrappedText(text("awayTeam").toUpperCase(), rightCX - teamW / 2, panelY + logoSize + 20 * u + teamSize, teamW, { size: teamSize, min: 22 * u, color: "#fff", weight: 900, align: "center", lineHeight: teamSize * 1.1, maxLines: 2, family: b.accentFont });
-    drawVsBrush(w * 0.5, panelY + logoSize * 0.52 + 16 * u, w, h);
-    drawFooterBand([[text("date"), text("time")].filter(Boolean).join("  |  "), text("location")], w, h, b.dark + "f0");
+    // Noms équipes sous les logos
+    const nameY = logoY + logoSz + 8 * u;
+    drawWrappedText(text("homeTeam").toUpperCase(), leftCX - teamW / 2, nameY + teamSz, teamW, {
+      size: teamSz, min: 20 * u, color: "#fff", weight: 900,
+      align: "center", lineHeight: teamSz * 1.12, maxLines: 2, family: b.accentFont,
+    });
+    drawWrappedText(text("awayTeam").toUpperCase(), rightCX - teamW / 2, nameY + teamSz, teamW, {
+      size: teamSz, min: 20 * u, color: "#fff", weight: 900,
+      align: "center", lineHeight: teamSz * 1.12, maxLines: 2, family: b.accentFont,
+    });
+    // 7. VS doré au centre
+    drawVsBrush(w * 0.5, logoY + logoSz * 0.5, w, h);
+    // 8. Footer
+    const dt = [text("date"), text("time")].filter(Boolean).join("  ·  ");
+    drawFooterBand([dt, text("location")], w, h, b.dark + "ee");
   }
 
   function renderMatchVs({ format, photo, logo, icon, homeLogo, awayLogo }) {
-    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
-    drawBg(photo, w, h, 0.32); drawBottomFade(w, h, 0.68); drawHeader(icon, logo, w, h);
-    drawFitText(text("title").toUpperCase(), 52 * u, 172 * u, w - 104 * u, { size: portrait ? 90 * u : 72 * u, min: 40 * u, maxHeight: 108 * u, color: "#fff", weight: 900, align: "center", stroke: rgba(b.dark, 0.45) });
-    drawCompPill(text("competition"), w * 0.5 - 210 * u, 228 * u, 420 * u, 46 * u);
-    const panelY = portrait ? h * 0.47 : h * 0.43;
-    drawDiagonalSplit(w, h, rgba(b.red, 0.88), rgba(b.blue, 0.88), panelY / h, 0.5, 70 * u);
-    const logoSize = portrait ? 210 * u : 172 * u, gap = 80 * u, totalW = logoSize * 2 + gap;
-    const lx = (w - totalW) / 2, rx = lx + logoSize + gap, logoY = panelY + 24 * u;
-    ctx.save(); ctx.shadowColor = "rgba(255,255,255,0.25)"; ctx.shadowBlur = 22 * u;
-    if (homeLogo) drawContain(homeLogo, lx, logoY, logoSize, logoSize); else { ctx.fillStyle = "rgba(255,255,255,0.16)"; roundRect(lx, logoY, logoSize, logoSize, 20 * u); ctx.fill(); }
-    if (awayLogo) drawContain(awayLogo, rx, logoY, logoSize, logoSize); else { ctx.fillStyle = "rgba(255,255,255,0.16)"; roundRect(rx, logoY, logoSize, logoSize, 20 * u); ctx.fill(); }
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), p = h >= w;
+    drawBg(photo, w, h, 0.30);
+    drawBottomFade(w, h, 0.65);
+    drawHeader(icon, logo, w, h);
+    // Titre centré sous en-tête
+    const titleY = (L.HDR_H + 16) * u;
+    drawFitText(text("title").toUpperCase(), w * 0.5, titleY, w - (L.PAD * 2) * u, {
+      size: p ? 86 * u : 68 * u, min: 38 * u, maxHeight: 104 * u,
+      color: "#fff", weight: 900, align: "center", stroke: "rgba(0,0,0,0.40)",
+    });
+    // Pill compétition centrée
+    const pillW = Math.min(500 * u, w * 0.56);
+    drawCompPill(text("competition"), w * 0.5 - pillW / 2, titleY + (p ? 22 : 18) * u, pillW, L.PILL_H * u);
+    // Split diagonal rouge/bleu
+    const panelRatio = p ? 0.44 : 0.40;
+    drawDiagonalSplit(w, h, rgba(b.red, 0.90), rgba(b.blue, 0.90), panelRatio, 0.5, 72 * u);
+    // Logos côte à côte, parfaitement centrés
+    const logoSz  = p ? 200 * u : 166 * u;
+    const gap     = 72 * u;
+    const totalW  = logoSz * 2 + gap;
+    const lx      = (w - totalW) / 2;
+    const rx      = lx + logoSz + gap;
+    const logoY   = h * panelRatio + 18 * u;
+    ctx.save();
+    ctx.shadowColor = "rgba(255,255,255,0.28)"; ctx.shadowBlur = 24 * u;
+    [{ x: lx, lg: homeLogo }, { x: rx, lg: awayLogo }].forEach(({ x, lg }) => {
+      if (lg) {
+        drawContain(lg, x, logoY, logoSz, logoSz);
+      } else {
+        ctx.fillStyle = "rgba(255,255,255,0.14)";
+        ctx.beginPath(); ctx.arc(x + logoSz / 2, logoY + logoSz / 2, logoSz * 0.44, 0, Math.PI * 2); ctx.fill();
+      }
+    });
     ctx.restore();
-    drawVsBrush(w * 0.5, logoY + logoSize * 0.5, w, h);
-    const nameY = logoY + logoSize + 12 * u, nameSize = portrait ? 52 * u : 42 * u, nameW = logoSize * 0.88;
-    drawWrappedText(text("homeTeam").toUpperCase(), lx + logoSize / 2 - nameW / 2, nameY + nameSize, nameW, { size: nameSize, min: 24 * u, color: "#fff", weight: 900, align: "center", lineHeight: nameSize * 1.1, maxLines: 2, family: b.accentFont });
-    drawWrappedText(text("awayTeam").toUpperCase(), rx + logoSize / 2 - nameW / 2, nameY + nameSize, nameW, { size: nameSize, min: 24 * u, color: "#fff", weight: 900, align: "center", lineHeight: nameSize * 1.1, maxLines: 2, family: b.accentFont });
-    drawFooterBand([[text("date"), text("time")].filter(Boolean).join("  ·  "), text("location")], w, h, b.dark + "f0");
+    // VS au centre des logos
+    drawVsBrush(w * 0.5, logoY + logoSz * 0.5, w, h);
+    // Noms d'équipes sous logos
+    const nameSz = p ? 50 * u : 40 * u;
+    const nameW  = logoSz * 0.92;
+    const nameY  = logoY + logoSz + 10 * u;
+    drawWrappedText(text("homeTeam").toUpperCase(), lx + logoSz / 2 - nameW / 2, nameY + nameSz, nameW, {
+      size: nameSz, min: 22 * u, color: "#fff", weight: 900,
+      align: "center", lineHeight: nameSz * 1.1, maxLines: 2, family: b.accentFont,
+    });
+    drawWrappedText(text("awayTeam").toUpperCase(), rx + logoSz / 2 - nameW / 2, nameY + nameSz, nameW, {
+      size: nameSz, min: 22 * u, color: "#fff", weight: 900,
+      align: "center", lineHeight: nameSz * 1.1, maxLines: 2, family: b.accentFont,
+    });
+    const dt = [text("date"), text("time")].filter(Boolean).join("  ·  ");
+    drawFooterBand([dt, text("location")], w, h, b.dark + "ee");
   }
 
   function renderResult({ format, photo, logo, icon }) {
-    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
-    drawBg(photo, w, h, 0.24);
-    drawDiagonalSplit(w, h, rgba(b.red, 0.91), rgba(b.blue, 0.85), 0.44, 0.5, 100 * u);
-    drawBottomFade(w, h, 0.4); drawHeader(icon, logo, w, h);
-    drawFitText(text("title").toUpperCase(), 50 * u, 168 * u, w * 0.56, { size: portrait ? 92 * u : 74 * u, min: 42 * u, maxHeight: 108 * u, color: "#fff", weight: 900, stroke: rgba(b.dark, 0.45) });
-    drawCompPill(text("competition"), 50 * u, 222 * u, w * 0.52, 44 * u);
-    const scoreY = h * (portrait ? 0.52 : 0.54);
-    drawFitText(`${text("scoreHome")}  –  ${text("scoreAway")}`, w * 0.5, scoreY, w * 0.82, { size: portrait ? 200 * u : 168 * u, min: 90 * u, color: "#fff", weight: 900, align: "center", stroke: rgba(b.dark, 0.5), strokeWidth: Math.max(5, 8 * u) });
-    drawFitText(`${text("homeTeam").toUpperCase()}  vs  ${text("awayTeam").toUpperCase()}`, w * 0.5, scoreY + 62 * u, w * 0.82, { size: 34 * u, min: 20 * u, color: b.gold, weight: 900, align: "center", family: b.accentFont });
-    drawWrappedText(text("details"), 54 * u, h - 152 * u, w - 108 * u, { size: 30 * u, min: 18 * u, color: "#fff", family: b.bodyFont, weight: 700, lineHeight: 44 * u, maxLines: 3 });
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), p = h >= w;
+    drawBg(photo, w, h, 0.22);
+    drawDiagonalSplit(w, h, rgba(b.red, 0.92), rgba(b.blue, 0.86), 0.42, 0.5, 96 * u);
+    drawBottomFade(w, h, 0.38);
+    drawHeader(icon, logo, w, h);
+    // Titre (VICTOIRE / DÉFAITE / NUL) sous l'en-tête
+    const titleY = (L.HDR_H + 14) * u;
+    drawFitText(text("title").toUpperCase(), L.PAD * u, titleY, w * 0.58, {
+      size: p ? 88 * u : 72 * u, min: 40 * u, maxHeight: 106 * u,
+      color: "#fff", weight: 900, stroke: "rgba(0,0,0,0.38)",
+    });
+    // Pill compétition
+    drawCompPill(text("competition"), L.PAD * u, titleY + (p ? 24 : 20) * u, w * 0.54, L.PILL_H * u);
+    // Score — éléments centraux, taille massive
+    const scoreY = h * (p ? 0.52 : 0.54);
+    ctx.save();
+    ctx.shadowColor  = "rgba(0,0,0,0.60)";
+    ctx.shadowBlur   = 32 * u;
+    ctx.shadowOffsetY = 8 * u;
+    drawFitText(
+      `${text("scoreHome")}  –  ${text("scoreAway")}`,
+      w * 0.5, scoreY, w * 0.86,
+      { size: p ? 196 * u : 164 * u, min: 88 * u, color: "#fff", weight: 900, align: "center" },
+    );
+    ctx.restore();
+    // Noms équipes sous le score, en or
+    drawFitText(
+      `${text("homeTeam").toUpperCase()}  vs  ${text("awayTeam").toUpperCase()}`,
+      w * 0.5, scoreY + (p ? 56 : 50) * u, w * 0.84,
+      { size: 32 * u, min: 18 * u, color: b.gold, weight: 900, align: "center", family: b.accentFont },
+    );
+    // Buteurs / résumé — bien au-dessus du footer
+    const footerTop = h - L.FOOT_H * u - 10 * u;
+    drawWrappedText(text("details"), L.PAD * u, footerTop - 86 * u, w - (L.PAD * 2) * u, {
+      size: 28 * u, min: 16 * u, color: "rgba(255,255,255,0.9)",
+      family: b.bodyFont, weight: 600, lineHeight: 42 * u, maxLines: 3,
+    });
+    drawFooterBand([[text("date"), text("time")].filter(Boolean).join("  ·  "), text("location")], w, h, b.dark + "ee");
   }
 
 
   function renderRoster({ format, photo, logo, icon }) {
-    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), portrait = h >= w;
-    drawBg(photo, w, h, 0.28);
-    const panelW = portrait ? w * 0.54 : w * 0.46;
-    ctx.fillStyle = rgba(b.red, 0.93); ctx.fillRect(0, 0, panelW, h);
-    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, panelW, 130 * u);
-    ctx.fillStyle = b.gold; ctx.fillRect(0, 128 * u, panelW, Math.max(3, 5 * u));
+    const { width: w, height: h } = format, b = state.brand, u = unit(w, h), p = h >= w;
+    // Photo plein cadre à droite
+    drawBg(photo, w, h, 0.26);
+    // Panneau rouge gauche
+    const panelW = p ? w * 0.56 : w * 0.48;
+    ctx.fillStyle = rgba(b.red, 0.95);
+    ctx.fillRect(0, 0, panelW, h);
+    // Zone blanche en-tête dans le panneau rouge
+    const hdrH = L.HDR_H * u;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, panelW, hdrH);
+    // Liseré or bas de la zone blanche
+    ctx.fillStyle = b.gold;
+    ctx.fillRect(0, hdrH - Math.max(3, 4 * u), panelW, Math.max(3, 4 * u));
     drawHeader(icon, logo, w, h);
-    drawFitText(text("title").toUpperCase(), 46 * u, 92 * u, panelW - 52 * u, { size: 68 * u, min: 36 * u, maxHeight: 80 * u, color: b.red, weight: 900 });
-    drawWrappedText(text("subtitle"), 46 * u, 175 * u, panelW - 52 * u, { size: 26 * u, color: "#fff", weight: 800, maxLines: 2, family: b.accentFont });
-    drawWrappedText(text("date"),     46 * u, 214 * u, panelW - 52 * u, { size: 24 * u, color: b.gold, weight: 800, maxLines: 2, family: b.accentFont });
-    const listTop = 256 * u, coachY = h - 148 * u, available = Math.max(80 * u, coachY - listTop - 20 * u);
-    const maxRows = Math.max(1, Math.floor(available / (38 * u)));
-    const nameItems = limitVisibleLines(lines(text("items")), maxRows);
-    const rowH = available / Math.max(nameItems.length, 1);
-    const nameSize = Math.max(20 * u, Math.min(42 * u, rowH * 0.58));
-    nameItems.forEach((name, i) => {
-      const ry = listTop + i * rowH;
-      if (i % 2 === 0) { ctx.fillStyle = "rgba(255,255,255,0.08)"; ctx.fillRect(0, ry, panelW, rowH - 2 * u); }
-      ctx.save(); ctx.fillStyle = rgba(b.gold, 0.7); ctx.font = `700 ${Math.round(nameSize * 0.72)}px ${b.bodyFont}`; ctx.textAlign = "right"; ctx.textBaseline = "alphabetic"; ctx.fillText(String(i + 1), 74 * u, ry + rowH * 0.72); ctx.restore();
-      drawFitText(name, 84 * u, ry + rowH * 0.72, panelW - 100 * u, { size: nameSize, min: 18 * u, color: "#fff", weight: 800, family: b.accentFont });
+    // Titre dans la zone blanche (rouge sur fond blanc)
+    drawFitText(text("title").toUpperCase(), L.PAD * u, hdrH * 0.70, panelW - (L.PAD + 20) * u, {
+      size: 62 * u, min: 32 * u, maxHeight: 74 * u, color: b.red, weight: 900,
     });
-    ctx.fillStyle = rgba(b.dark, 0.7); ctx.fillRect(0, coachY - 14 * u, panelW, 130 * u);
-    drawFitText(`Coach : ${text("coach")}`, 46 * u, coachY + 48 * u, panelW - 52 * u, { size: 34 * u, min: 20 * u, color: b.gold, weight: 900, family: b.accentFont });
+    // Match + date sous la zone blanche
+    const infoX = L.PAD * u;
+    const infoW = panelW - (L.PAD + 16) * u;
+    drawFitText(text("subtitle"), infoX, hdrH + 36 * u, infoW, {
+      size: 25 * u, min: 16 * u, color: "#fff", weight: 800, family: b.accentFont,
+    });
+    drawFitText(text("date"), infoX, hdrH + 68 * u, infoW, {
+      size: 23 * u, min: 15 * u, color: b.gold, weight: 800, family: b.accentFont,
+    });
+    // Liste joueurs
+    const listTop = hdrH + 96 * u;
+    const coachZoneH = 110 * u;
+    const coachY = h - coachZoneH - 8 * u;
+    const available = Math.max(60 * u, coachY - listTop - 8 * u);
+    // Calcul du nombre de lignes selon l'espace disponible
+    const lineH   = 38 * u;
+    const maxRows = Math.max(1, Math.floor(available / lineH));
+    const items   = limitVisibleLines(lines(text("items")), maxRows);
+    const rowH    = available / Math.max(items.length, 1);
+    const nameSz  = Math.max(18 * u, Math.min(36 * u, rowH * 0.56));
+    items.forEach((name, i) => {
+      const ry = listTop + i * rowH;
+      // Fond alternant subtil
+      if (i % 2 === 0) {
+        ctx.fillStyle = "rgba(255,255,255,0.09)";
+        ctx.fillRect(0, ry, panelW, rowH - 1 * u);
+      }
+      // Numéro (doré, aligné droite dans une zone fixe)
+      ctx.save();
+      ctx.fillStyle = rgba(b.gold, 0.75);
+      ctx.font = `700 ${Math.round(nameSz * 0.70)}px ${b.bodyFont}`;
+      ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
+      ctx.fillText(String(i + 1), (L.PAD + 28) * u, ry + rowH * 0.70);
+      ctx.restore();
+      drawFitText(name, (L.PAD + 36) * u, ry + rowH * 0.70, panelW - (L.PAD + 50) * u, {
+        size: nameSz, min: 16 * u, color: "#fff", weight: 800, family: b.accentFont,
+      });
+    });
+    // Zone coach
+    ctx.fillStyle = rgba(b.dark, 0.72);
+    ctx.fillRect(0, coachY, panelW, coachZoneH);
+    ctx.fillStyle = b.gold;
+    ctx.fillRect(0, coachY, panelW, Math.max(2, 3 * u));
+    drawFitText(`Coach : ${text("coach")}`, L.PAD * u, coachY + coachZoneH * 0.62, panelW - (L.PAD + 12) * u, {
+      size: 30 * u, min: 18 * u, color: b.gold, weight: 900, family: b.accentFont,
+    });
   }
 
   function renderPortrait({ format, photo, logo, icon }) {
