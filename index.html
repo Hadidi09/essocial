@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="assets/css/styles.css" />
   </head>
   <body>
+    <a href="#main-content" class="skip-link">Passer au contenu</a>
     <div class="app-shell">
       <header class="topbar">
         <div class="brand-lockup">
@@ -37,18 +38,29 @@
             id="adminToggle"
             type="button"
             title="Mode admin"
+            aria-pressed="false"
           >
             <span aria-hidden="true">⚙</span>
             <span class="sr-only">Mode admin</span>
           </button>
+          <button
+            class="icon-button"
+            id="shortcutsToggle"
+            type="button"
+            title="Raccourcis clavier (Ctrl+?)"
+            aria-pressed="false"
+          >
+            <span aria-hidden="true">⌨</span>
+            <span class="sr-only">Raccourcis clavier</span>
+          </button>
         </div>
       </header>
 
-      <main class="workspace">
-        <aside class="library-panel" aria-label="Bibliothèque de modèles">
+      <main class="workspace" id="main-content">
+        <aside class="library-panel" aria-label="Bibliothèque de modèles" role="region">
           <div class="section-heading">
             <h2>Modèles</h2>
-            <span id="templateCount">0</span>
+            <span id="templateCount" aria-live="polite">0</span>
           </div>
           <nav
             class="category-tabs"
@@ -56,10 +68,10 @@
             role="tablist"
             aria-label="Catégories"
           ></nav>
-          <div class="template-grid" id="templateGrid"></div>
+          <div class="template-grid" id="templateGrid" role="listbox" aria-label="Liste des modèles"></div>
         </aside>
 
-        <section class="preview-panel" aria-label="Aperçu du visuel">
+        <section class="preview-panel" aria-label="Aperçu du visuel" role="region">
           <div class="preview-toolbar">
             <div>
               <span class="eyebrow" id="currentCategory">Matchs</span>
@@ -67,7 +79,7 @@
             </div>
             <label class="select-control">
               Format
-              <select id="formatSelect"></select>
+              <select id="formatSelect" aria-label="Sélectionner le format d'export"></select>
             </label>
           </div>
           <div class="canvas-stage">
@@ -80,11 +92,11 @@
           </div>
           <div class="preview-meta">
             <span id="formatMeta">1080 × 1080 px</span>
-            <span id="autosaveState">Prêt</span>
+            <span id="autosaveState" aria-live="polite">Prêt</span>
           </div>
         </section>
 
-        <aside class="editor-panel" aria-label="Éditeur">
+        <aside class="editor-panel" aria-label="Éditeur" role="region">
           <div class="panel-scroll">
             <section class="editor-section">
               <div class="section-heading">
@@ -120,8 +132,8 @@
                 <input id="awayLogoUpload" type="file" accept="image/*" />
               </label>
               <label class="file-row">
-                Logo partenaire
-                <input id="partnerUpload" type="file" accept="image/*" />
+                Logos partenaires
+                <input id="partnerUpload" type="file" accept="image/*" multiple />
               </label>
               <label class="file-row">
                 Taille logo partenaire
@@ -218,6 +230,24 @@
           </div>
         </aside>
       </main>
+    </div>
+
+    <div class="shortcuts-overlay" id="shortcutsOverlay" hidden>
+      <div class="shortcuts-dialog" role="dialog" aria-labelledby="shortcutsTitle">
+        <h3 id="shortcutsTitle">Raccourcis clavier</h3>
+        <ul>
+          <li><kbd>Ctrl</kbd>+<kbd>S</kbd> Sauvegarder le design</li>
+          <li><kbd>Ctrl</kbd>+<kbd>P</kbd> Exporter en PNG</li>
+          <li><kbd>Ctrl</kbd>+<kbd>J</kbd> Exporter en JPG</li>
+          <li><kbd>Ctrl</kbd>+<kbd>E</kbd> Exporter en PDF</li>
+          <li><kbd>Ctrl</kbd>+<kbd>R</kbd> Réinitialiser le modèle</li>
+          <li><kbd>Ctrl</kbd>+<kbd>F</kbd> Focus recherche</li>
+          <li><kbd>↑</kbd> / <kbd>↓</kbd> Naviguer dans les modèles</li>
+          <li><kbd>Enter</kbd> Ouvrir le modèle sélectionné</li>
+          <li><kbd>Esc</kbd> Fermer l'aide</li>
+        </ul>
+        <button class="secondary-button" id="closeShortcuts" type="button">Fermer</button>
+      </div>
     </div>
 
     <script src="assets/js/templates.js"></script>
