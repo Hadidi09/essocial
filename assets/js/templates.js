@@ -168,6 +168,7 @@
           field("awayTeam", "Équipe 2", "Besançon Football"),
           field("scoreHome", "Score ES Doubs", "3"),
           field("scoreAway", "Score adverse", "1"),
+          field("location", "Lieu du match", "Complexe Saint-Claude"),
           field(
             "details",
             "Buteurs / résumé",

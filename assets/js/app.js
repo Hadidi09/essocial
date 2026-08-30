@@ -1100,17 +1100,17 @@
       b = state.brand,
       u = unit(w, h),
       p = h >= w;
-    drawBg(photo, w, h, 0.24);
+    drawBg(photo, w, h, 0.02);
     drawDiagonalSplit(
       w,
       h,
-      rgba(b.red, 0.92),
-      rgba(b.blue, 0.86),
-      0.42,
+      rgba(b.red, 0.48),
+      rgba(b.blue, 0.42),
+      0.44,
       0.5,
-      96 * u,
+      72 * u,
     );
-    drawBottomFade(w, h, 0.42);
+    drawBottomFade(w, h, 0.18);
     drawHeader(icon, logo, w, h);
     const gap = L.GAP * u;
 
@@ -1138,28 +1138,39 @@
     drawCompPill(text("competition"), L.PAD * u, pillY, pillW, L.PILL_H * u);
 
     // Score ─────────────────────────────────────────────────────
-    const scoreY = h * (p ? 0.52 : 0.54);
+    const scoreY = h * (p ? 0.62 : 0.64);
     ctx.save();
-    ctx.shadowColor   = "rgba(0,0,0,0.65)";
-    ctx.shadowBlur    = 36 * u;
-    ctx.shadowOffsetY = 10 * u;
+    ctx.shadowColor   = "rgba(0,0,0,0.22)";
+    ctx.shadowBlur    = 12 * u;
+    ctx.shadowOffsetY = 2 * u;
     drawFitText(
       `${text("scoreHome")}  –  ${text("scoreAway")}`,
       w * 0.5,
       scoreY,
-      w * 0.86,
-      { size: p ? 190 * u : 158 * u, min: 84 * u, color: "#fff", weight: 900, align: "center" },
+      w * 0.76,
+      { size: p ? 120 * u : 100 * u, min: 50 * u, color: "#fff", weight: 900, align: "center" },
     );
     ctx.restore();
 
-    // Noms d'équipes — sous le score, en or
+    // Noms d'équipes — sous le score, blancs et plus présents
     drawFitText(
       `${text("homeTeam").toUpperCase()}  vs  ${text("awayTeam").toUpperCase()}`,
       w * 0.5,
-      scoreY + (p ? 58 : 50) * u + gap,
-      w * 0.84,
-      { size: 30 * u, min: 16 * u, color: b.gold, weight: 900, align: "center", family: b.accentFont },
+      scoreY + (p ? 34 : 28) * u + gap,
+      w * 0.9,
+      { size: 26 * u, min: 14 * u, color: "#fff", weight: 800, align: "center", family: b.accentFont },
     );
+
+    // Lieu du match — plus lisible et visible sans dominer
+    if (text("location")) {
+      drawFitText(
+        text("location").toUpperCase(),
+        w * 0.5,
+        scoreY + (p ? 60 : 50) * u + gap,
+        w * 0.72,
+        { size: 16 * u, min: 10 * u, color: "rgba(255,255,255,0.9)", weight: 700, align: "center", family: b.bodyFont },
+      );
+    }
 
     // Buteurs — bien au-dessus du footer, avec fond sombre pour lisibilité
     const footerTop  = h - L.FOOT_H * u;
