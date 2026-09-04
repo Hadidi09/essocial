@@ -2326,100 +2326,230 @@
     drawFooterBand([text("cta") || ""], w, h, rgba(b.dark, 0.88));
   }
 
+  /**
+   * renderList — Programme des matchs du week-end
+   * Direction "Split-card" : fond très sombri, chaque match = bloc horizontal
+   * avec zone heure | noms + catégorie | badge DOM/EXT
+   * Séparateurs de jour en doré, pagination auto si > MAX_PER_PAGE matchs
+   */
   function renderList({ format, photo, logo, icon }) {
     const { width: w, height: h } = format,
       b = state.brand,
       u = unit(w, h);
-    const gap = L.GAP * u;
 
-    // ── FOND ─────────────────────────────────────────────────
-    // Photo plein cadre + overlay dégradé sombre à gauche
-    // pour que le texte reste lisible quelle que soit la photo.
-    drawBg(photo, w, h, 0.22);
-    // Voile sombre sur la moitié gauche (zone texte)
-    const fade = ctx.createLinearGradient(0, 0, w * 0.72, 0);
-    fade.addColorStop(0,    "rgba(10,10,20,0.82)");
-    fade.addColorStop(0.65, "rgba(10,10,20,0.55)");
-    fade.addColorStop(1,    "rgba(10,10,20,0.0)");
-    ctx.fillStyle = fade;
+    // ── Constantes de mise en page ────────────────────────────
+    const PAD = L.PAD * u;
+    const GAP = L.GAP * u;
+    // Pas de pagination — tous les matchs sont affichés, rowH s'adapte automatiquement
+
+    // ── 1. FOND très sombre — les joueurs passent en texture ──
+    drawBg(photo, w, h, 0.15);
+    // Overlay uniforme très opaque → le texte prime toujours
+    ctx.fillStyle = "rgba(8,10,20,0.82)";
+    ctx.fillRect(0, 0, w, h);
+    // Légère texture diagonale rouge en coin HG (identité ESD)
+    const triGrad = ctx.createLinearGradient(0, 0, w * 0.55, h * 0.48);
+    triGrad.addColorStop(0,   rgba(b.red, 0.22));
+    triGrad.addColorStop(1,   "rgba(0,0,0,0)");
+    ctx.fillStyle = triGrad;
     ctx.fillRect(0, 0, w, h);
 
-    // ── EN-TÊTE ───────────────────────────────────────────────
-    drawHeader(icon, logo, w, h);
+    // ── 2. EN-TÊTE rouge plein ────────────────────────────────
+    const hdrH = (L.PAD + L.ICON) * u + 14 * u;
+    ctx.fillStyle = b.red;
+    ctx.fillRect(0, 0, w, hdrH);
+    // Liseré or bas du header
+    ctx.fillStyle = b.gold;
+    ctx.fillRect(0, hdrH - Math.max(3, 4 * u), w, Math.max(3, 4 * u));
 
-    // ── TITRE aligné sur la ligne de l'icône ─────────────────
-    // Même logique que renderTable : titre à droite du badge,
-    // sous-titre juste en-dessous.
-    const iconSz = L.ICON * u;
-    const titleX = L.PAD * u + iconSz + 14 * u;
-    const titleW = w - titleX - L.LOGO * u - L.PAD * 2 * u;
-    const titleY = L.PAD * u + iconSz * 0.72;   // baseline = centre vertical badge
+    // Logo ESD sur fond blanc arrondi dans le coin HD — dessiné APRES
+    // le fond rouge pour que le badge blanc soit visible
+    const logoSz  = L.LOGO * u;
+    const logoPad = L.PAD * u;
+    const logoX   = w - logoSz - logoPad;
+    const logoY   = logoPad * 0.6;
+    drawLogo(logo, logoX, logoY, logoSz);
 
-    drawFitText(text("title").toUpperCase(), titleX, titleY, titleW, {
-      size: 72 * u,
-      min: 36 * u,
-      maxHeight: 86 * u,
-      color: "#fff",
-      weight: 900,
-    });
-
-    // Sous-titre en rouge vif, juste sous le titre
-    drawFitText(text("subtitle").toUpperCase(), titleX, titleY + 40 * u, titleW, {
-      size: 26 * u,
-      min: 14 * u,
-      color: b.red,
-      weight: 900,
-      family: b.accentFont,
-    });
-
-    // ── PILL DATE ─────────────────────────────────────────────
-    // Pill bleue pleine largeur (zone texte), bien visible
-    const pillX = L.PAD * u;
-    const pillY = L.PAD * u + iconSz + gap + 10 * u;
-    const pillW = Math.min(w * 0.66, 640 * u);
-    const pillH = 52 * u;
+    // Icône badge HG + titre (sans appel drawHeader pour éviter
+    // le double dessin du logo)
+    const iconRight = (L.PAD + L.ICON) * u + 12 * u;
+    const iconMidY  = (L.PAD + L.ICON * 0.72) * u;
     ctx.save();
-    ctx.shadowColor  = "rgba(0,0,0,0.35)";
-    ctx.shadowBlur   = 14 * u;
-    ctx.shadowOffsetY = 4 * u;
-    drawPill(text("date"), pillX, pillY, pillW, pillH, b.blue, "#fff");
+    ctx.shadowColor = "rgba(0,0,0,0.22)"; ctx.shadowBlur = 12 * u; ctx.shadowOffsetY = 3 * u;
+    drawIconBadge(icon, logoPad, L.PAD * u * 0.6, L.ICON * u, "#fff", b.red);
+    ctx.restore();
+    const titleW    = w - iconRight - (L.LOGO + L.PAD + 8) * u;
+    drawFitText(text("title").toUpperCase(), iconRight, iconMidY, titleW, {
+      size: 56 * u, min: 28 * u, maxHeight: L.ICON * u * 0.78,
+      color: "#fff", weight: 900, family: b.accentFont,
+    });
+
+    // ── 3. PILL DATE sous le header ───────────────────────────
+    const pillH = 44 * u;
+    const pillY = hdrH + GAP * 0.6;
+    const pillW = Math.min(w - PAD * 2, 700 * u);
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.35)"; ctx.shadowBlur = 10 * u; ctx.shadowOffsetY = 3 * u;
+    drawPill(text("date").toUpperCase(), PAD, pillY, pillW, pillH, b.blue, "#fff");
     ctx.restore();
 
-    // ── LIGNES PROGRAMME ──────────────────────────────────────
-    const startY    = pillY + pillH + gap + 8 * u;
-    const rowAreaW  = Math.min(w * 0.82, w - L.PAD * 2 * u);  // pleine largeur utile
-    const available = h - startY - L.FOOT_H * u - gap;
-    const rowItems  = limitVisibleLines(
-      lines(text("items")),
-      Math.max(1, Math.floor(available / (56 * u))),
-    );
-    const rowH = Math.max(52 * u, Math.min(90 * u, available / Math.max(rowItems.length, 1)));
-    const barW = 8 * u;   // épaisseur barre gauche colorée
+    // ── 4. PARSE des matchs ───────────────────────────────────
+    // Format attendu par ligne :
+    //   "SAM · 10h00 · U15 D1 — MORTEAU vs DOUBS 1 · Stade X"
+    // On accepte aussi le format libre — on affiche la ligne telle quelle
+    const allItems     = lines(text("items"));
+    // Tous les matchs affichés — pas de pagination
+    const visibleItems = allItems;
+    const hiddenCount  = 0;
 
-    rowItems.forEach((row, i) => {
-      const ry = startY + i * rowH;
-      // Fond ligne : blanc semi-transparent
-      ctx.fillStyle = "rgba(255,255,255,0.13)";
-      roundRect(L.PAD * u, ry, rowAreaW, rowH - 10 * u, 8 * u);
+    // ── 5. RENDU des blocs matchs ─────────────────────────────
+    const listTop  = pillY + pillH + GAP * 0.75;
+    const footerH  = L.FOOT_H * u;
+    const listBot  = h - footerH - GAP * 0.5;
+    const available = listBot - listTop;
+    const rowCount  = visibleItems.length + (hiddenCount > 0 ? 1 : 0);
+    const rowH      = Math.max(52 * u, Math.min(110 * u, available / Math.max(rowCount, 1)));
+    const nameSize  = Math.max(15 * u, Math.min(28 * u, rowH * 0.32));
+    const metaSize  = Math.max(12 * u, Math.min(20 * u, rowH * 0.22));
+    const rowW      = w - PAD * 2;
+
+    visibleItems.forEach((raw, i) => {
+      const ry = listTop + i * rowH;
+
+      // Format attendu : "SAM - 10h00 - Categorie -- Equipe1 vs Equipe2 - Stade"
+      // Separateurs ASCII purs : tiret simple (-) entre champs, double tiret (--) avant les noms
+      let jour = "", heure = "", categorie = "", equipes = "", stade = "";
+      const m = raw.match(
+        /^(SAM|DIM)\s*-\s*([0-9h:]+)\s*-\s*([^-]+?)\s*--\s*(.+?)(?:\s*-\s*(.+))?$/i
+      );
+      if (m) {
+        jour      = m[1].toUpperCase();
+        heure     = m[2].trim();
+        categorie = m[3].trim();
+        equipes   = m[4].trim();
+        stade     = (m[5] || "").trim();
+      }
+      const parsed = Boolean(m);
+
+      // ── Fond de la carte ───────────────────────────────────
+      // Fond légèrement plus clair sur les lignes alternées
+      ctx.fillStyle = i % 2 === 0 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.05)";
+      roundRect(PAD, ry + 2 * u, rowW, rowH - 8 * u, 10 * u);
       ctx.fill();
-      // Barre gauche colorée : rouge/bleu en alternance
-      const barColor = i % 2 === 0 ? b.red : b.blue;
-      ctx.fillStyle = barColor;
-      roundRect(L.PAD * u, ry, barW, rowH - 10 * u, 4 * u);
-      ctx.fill();
-      // Texte ligne — blanc, taille adaptée à rowH
-      const textSz = Math.min(32 * u, rowH * 0.44);
-      drawFitText(row, L.PAD * u + barW + 18 * u, ry + rowH * 0.60, rowAreaW - barW - 24 * u, {
-        size: textSz,
-        min: 18 * u,
-        color: "#fff",
-        weight: 800,
-        family: b.accentFont,
-      });
+
+      if (parsed) {
+        // ── ZONE HEURE (gauche, 14% de la largeur) ────────────
+        const heureZoneW = rowW * 0.14;
+        const heureX     = PAD + heureZoneW / 2;
+
+        // Pastille jour (SAM=rouge, DIM=bleu)
+        const jourColor = jour === "SAM" ? b.red : b.blue;
+        ctx.fillStyle   = jourColor;
+        const jourH     = Math.max(18 * u, rowH * 0.22);
+        const jourW     = heureZoneW - 6 * u;
+        const jourY     = ry + 2 * u + (rowH - 8 * u) * 0.10;
+        roundRect(PAD + 3 * u, jourY, jourW, jourH, jourH * 0.35);
+        ctx.fill();
+        drawFitText(jour, PAD + 3 * u + jourW / 2, jourY + jourH * 0.74, jourW, {
+          size: metaSize * 0.82, min: 10 * u, color: "#fff", weight: 900,
+          align: "center", family: b.accentFont,
+        });
+
+        // Heure
+        drawFitText(heure, PAD + 3 * u, jourY + jourH + 5 * u + nameSize * 0.9, jourW, {
+          size: nameSize * 0.96, min: 12 * u, color: "#fff", weight: 900,
+          align: "center", family: b.accentFont,
+        });
+
+        // ── ZONE NOMS (centre, 68% de la largeur) ─────────────
+        const nameZoneX = PAD + heureZoneW + 8 * u;
+        const nameZoneW = rowW * 0.68;
+        const midY      = ry + 2 * u + (rowH - 8 * u) / 2;
+
+        // Catégorie en doré, petit
+        drawFitText(categorie, nameZoneX, midY - nameSize * 0.62, nameZoneW, {
+          size: metaSize, min: 10 * u, color: b.gold, weight: 800, family: b.accentFont,
+        });
+
+        // Noms des équipes — partie principale
+        // Détecte si "DOUBS" est dans chaque moitié
+        const parts   = equipes.split(/\s+vs\s+/i);
+        const team1   = (parts[0] || equipes).trim();
+        const team2   = (parts[1] || "").trim();
+        const hasVs   = parts.length === 2;
+
+        if (hasVs) {
+          // Ligne équipe 1 — vs — équipe 2, séparés par un tiret
+          const isHome = team2.toLowerCase().includes("doubs");
+          const isAway = team1.toLowerCase().includes("doubs");
+          const t1Col  = isAway ? b.gold : "#fff";
+          const t2Col  = isHome ? b.gold : "#fff";
+
+          // Équipe 1
+          drawFitText(team1, nameZoneX, midY + nameSize * 0.22, nameZoneW * 0.44, {
+            size: nameSize, min: 11 * u, color: t1Col, weight: 900, family: b.accentFont,
+          });
+          // "–" central
+          drawFitText("–", nameZoneX + nameZoneW * 0.46, midY + nameSize * 0.22, nameZoneW * 0.08, {
+            size: nameSize, min: 11 * u, color: "rgba(255,255,255,0.45)", weight: 700, align: "center",
+          });
+          // Équipe 2
+          drawFitText(team2, nameZoneX + nameZoneW * 0.56, midY + nameSize * 0.22, nameZoneW * 0.44, {
+            size: nameSize, min: 11 * u, color: t2Col, weight: 900, family: b.accentFont,
+          });
+        } else {
+          // Ligne brute si pas de "vs"
+          drawFitText(equipes, nameZoneX, midY + nameSize * 0.22, nameZoneW, {
+            size: nameSize, min: 11 * u, color: "#fff", weight: 900, family: b.accentFont,
+          });
+        }
+
+        // Stade en petit dessous
+        if (stade) {
+          drawFitText("@ " + stade, nameZoneX, midY + nameSize * 1.06, nameZoneW, {
+            size: metaSize * 0.88, min: 9 * u, color: "rgba(255,255,255,0.55)", weight: 600,
+            family: b.bodyFont,
+          });
+        }
+
+        // ── BADGE DOM/EXT (droite, 18%) ────────────────────────
+        const badgeZoneX = PAD + heureZoneW + 8 * u + rowW * 0.68 + 8 * u;
+        const badgeW     = rowW - heureZoneW - rowW * 0.68 - 16 * u;
+        const badgeH2    = Math.max(22 * u, rowH * 0.28);
+        const badgeY     = ry + 2 * u + (rowH - 8 * u) / 2 - badgeH2 / 2;
+
+        // DOM/EXT : DOUBS en team1 (gauche) = équipe qui reçoit = DOMICILE
+        //           DOUBS en team2 (droite) = équipe qui se déplace = EXTÉRIEUR
+        const doubsIsTeam1 = team1.toUpperCase().includes("DOUBS");
+        const doubsIsTeam2 = team2.toUpperCase().includes("DOUBS");
+        const isHome  = doubsIsTeam1;   // DOUBS joue à domicile (côté gauche)
+        const isAway  = doubsIsTeam2;   // DOUBS joue à l'extérieur (côté droite)
+        const badgeLabel  = isHome ? "DOMICILE" : "EXTERIEUR";
+        const badgeColor  = isHome ? b.red : b.blue;
+
+        drawPill(badgeLabel, badgeZoneX, badgeY, Math.min(badgeW, 160 * u), badgeH2, badgeColor, "#fff");
+
+      } else {
+        // ── Ligne brute (format non structuré) ────────────────
+        const midY = ry + 2 * u + (rowH - 8 * u) * 0.60;
+        drawFitText(raw, PAD + 12 * u, midY, rowW - 24 * u, {
+          size: nameSize, min: 12 * u, color: "#fff", weight: 800, family: b.accentFont,
+        });
+      }
     });
 
+    // ── Mention "+ N matchs" si pagination ───────────────────
+    if (hiddenCount > 0) {
+      const moreY = listTop + visibleItems.length * rowH + 6 * u;
+      drawFitText(
+        `+ ${hiddenCount} autre${hiddenCount > 1 ? "s" : ""} match${hiddenCount > 1 ? "s" : ""} — voir le programme complet`,
+        PAD, moreY + 20 * u, w - PAD * 2,
+        { size: 18 * u, min: 12 * u, color: rgba(b.gold, 0.82), weight: 700, family: b.bodyFont },
+      );
+    }
+
     // ── FOOTER ────────────────────────────────────────────────
-    drawFooterBand([text("footer") || "Allez l'ESD !"], w, h, b.dark + "ee");
+    drawFooterBand([text("footer") || "Allez l'ES Doubs !"], w, h, rgba(b.dark, 0.96));
   }
 
   function renderTable({ format, photo, logo, icon }) {
