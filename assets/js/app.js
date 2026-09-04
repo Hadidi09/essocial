@@ -52,8 +52,9 @@
     imageUpload: document.getElementById("imageUpload"),
     homeLogoUpload: document.getElementById("homeLogoUpload"),
     awayLogoUpload: document.getElementById("awayLogoUpload"),
-    partnerUpload: document.getElementById("partnerUpload"),
-    partnerSize: document.getElementById("partnerSize"),
+    partnerUpload:  document.getElementById("partnerUpload"),
+    partnerBank:    document.getElementById("partnerBank"),
+    partnerSize:    document.getElementById("partnerSize"),
     partnerPosition: document.getElementById("partnerPosition"),
     partnerStyle: document.getElementById("partnerStyle"),
     mediaBank: document.getElementById("mediaBank"),
@@ -341,6 +342,7 @@
     renderTemplateList();
     renderFieldEditor();
     renderMediaBank();
+    renderPartnerBank();
     renderIconBank();
     requestRender();
   }
@@ -410,6 +412,66 @@
     });
   }
 
+  /**
+   * renderPartnerBank — affiche les logos partenaires chargés
+   * avec un bouton × pour supprimer chaque logo individuellement.
+   * Limite visuelle : max 3 logos.
+   */
+  function renderPartnerBank() {
+    if (!els.partnerBank) return;
+    els.partnerBank.innerHTML = "";
+
+    if (!state.partnerLogos.length) {
+      // Message discret quand vide
+      const empty = document.createElement("p");
+      empty.className = "partner-bank-empty";
+      empty.textContent = "Aucun logo partenaire chargé.";
+      els.partnerBank.appendChild(empty);
+      return;
+    }
+
+    state.partnerLogos.forEach((src, index) => {
+      // Carte logo
+      const card = document.createElement("div");
+      card.className = "partner-bank-card";
+      card.setAttribute("aria-label", `Logo partenaire ${index + 1}`);
+
+      // Miniature
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = `Logo partenaire ${index + 1}`;
+      card.appendChild(img);
+
+      // Badge numéro
+      const num = document.createElement("span");
+      num.className = "partner-bank-num";
+      num.textContent = String(index + 1);
+      card.appendChild(num);
+
+      // Bouton supprimer
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "partner-bank-del";
+      del.setAttribute("aria-label", `Supprimer le logo partenaire ${index + 1}`);
+      del.textContent = "×";
+      del.addEventListener("click", () => {
+        state.partnerLogos = state.partnerLogos.filter((_, i) => i !== index);
+        renderPartnerBank();
+        requestRender();
+        saveDraftDebounced();
+      });
+      card.appendChild(del);
+
+      els.partnerBank.appendChild(card);
+    });
+
+    // Compteur
+    const counter = document.createElement("p");
+    counter.className = "partner-bank-count";
+    counter.textContent = `${state.partnerLogos.length} / 3 logo${state.partnerLogos.length > 1 ? "s" : ""}`;
+    els.partnerBank.appendChild(counter);
+  }
+
   function renderIconBank() {
     els.iconBank.innerHTML = "";
     data.icons.forEach((ic) => {
@@ -448,14 +510,17 @@
     setLoading(true);
     try {
       if (target === "partner") {
-        const files = file.length !== undefined ? Array.from(file) : [file];
+        const files  = file.length !== undefined ? Array.from(file) : [file];
         const images = files.filter((f) => f.type?.startsWith("image/"));
-        if (!images.length) {
-          setLoading(false);
-          return;
-        }
+        if (!images.length) { setLoading(false); return; }
         const dataUrls = await Promise.all(images.map(fileToDataUrl));
-        state.partnerLogos = [...state.partnerLogos, ...dataUrls];
+        // Limite à 3 logos partenaires au total
+        const merged = [...state.partnerLogos, ...dataUrls];
+        state.partnerLogos = merged.slice(0, 3);
+        if (merged.length > 3) {
+          setStatusState("info", `Max 3 logos — ${merged.length - 3} ignoré(s)`);
+        }
+        renderPartnerBank();
       } else {
         if (!file.type?.startsWith("image/")) return;
         const dataUrl = await fileToDataUrl(file);
@@ -2827,53 +2892,39 @@
 
   function drawPartnerBadge(partnerLogos, w, h, u) {
     if (!partnerLogos?.length) return;
-    const logos = partnerLogos.filter(Boolean).slice(0, 4);
-    const pad = 20 * u;
-    const gap = 12 * u;
-    const rows = logos.length > 2 ? 2 : 1;
-    const cols = Math.ceil(logos.length / rows);
-    const maxWidth = w - pad * 2;
-    const maxHeight = h * 0.12;
-    const maxCountSize = logos.length === 1 ? 100 * u : logos.length === 2 ? 82 * u : 70 * u;
-    const naturalSize = Math.min((state.partnerLogoSize || 120) * u, maxCountSize);
-    const size = Math.min(
-      naturalSize,
-      (maxWidth - gap * (cols - 1)) / cols,
-      (maxHeight - gap * (rows - 1)) / rows,
-    );
-    const totalWidth = cols * size + gap * (cols - 1);
-    const totalHeight = rows * size + gap * (rows - 1);
-    let x = pad,
-      y = h - totalHeight - pad;
-    if (state.partnerLogoPosition === "bottom-right") x = w - totalWidth - pad;
-    else if (state.partnerLogoPosition === "top-left") y = pad;
-    else if (state.partnerLogoPosition === "top-right") {
-      x = w - totalWidth - pad;
-      y = pad;
-    }
-    logos.forEach((logoImg, index) => {
-      const row = Math.floor(index / cols);
-      const col = index % cols;
-      const logoX = x + col * (size + gap);
-      const logoY = y + row * (size + gap);
+    // Max 3 logos — affichage en ligne horizontale (1, 2 ou 3 côte à côte)
+    const logos  = partnerLogos.filter(Boolean).slice(0, 3);
+    const count  = logos.length;
+    const pad    = 18 * u;
+    const gap    = 10 * u;
+    // Taille max par logo selon le nombre : plus il y en a, plus ils réduisent
+    const maxH   = h * 0.11;
+    const maxW   = (w - pad * 2 - gap * (count - 1)) / count;
+    const base   = (state.partnerLogoSize || 120) * u;
+    const size   = Math.min(base, maxW, maxH, count === 1 ? 110 * u : count === 2 ? 90 * u : 74 * u);
+    const totalW = count * size + gap * (count - 1);
+
+    // Position
+    let x = pad, y = h - size - pad;
+    if (state.partnerLogoPosition === "bottom-right")  { x = w - totalW - pad; }
+    else if (state.partnerLogoPosition === "top-left") { y = pad; }
+    else if (state.partnerLogoPosition === "top-right"){ x = w - totalW - pad; y = pad; }
+
+    logos.forEach((logoImg, i) => {
+      const lx = x + i * (size + gap);
+      const ly = y;
       ctx.save();
       if (state.partnerLogoStyle === "overlay") {
-        drawContain(logoImg, logoX, logoY, size, size);
+        drawContain(logoImg, lx, ly, size, size);
       } else {
-        ctx.fillStyle = "rgba(255,255,255,0.94)";
-        ctx.shadowColor = "rgba(0,0,0,0.12)";
-        ctx.shadowBlur = 10 * u;
-        roundRect(logoX, logoY, size, size, 12 * u);
+        ctx.fillStyle    = "rgba(255,255,255,0.95)";
+        ctx.shadowColor  = "rgba(0,0,0,0.14)";
+        ctx.shadowBlur   = 10 * u;
+        ctx.shadowOffsetY = 2 * u;
+        roundRect(lx, ly, size, size, 10 * u);
         ctx.fill();
-        ctx.shadowColor = "transparent";
-        ctx.shadowBlur = 0;
-        drawContain(
-          logoImg,
-          logoX + 8 * u,
-          logoY + 8 * u,
-          size - 16 * u,
-          size - 16 * u,
-        );
+        ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
+        drawContain(logoImg, lx + 7 * u, ly + 7 * u, size - 14 * u, size - 14 * u);
       }
       ctx.restore();
     });
