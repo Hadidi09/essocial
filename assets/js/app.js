@@ -350,6 +350,9 @@
   function renderFieldEditor() {
     const tmpl = getTemplate(state.templateId);
     els.fieldEditor.innerHTML = "";
+    if (tmpl.id === "programme-weekend") {
+      renderProgrammeConverter();
+    }
     tmpl.fields.forEach((item) => {
       const label = document.createElement("label");
       label.textContent = item.label;
@@ -378,6 +381,144 @@
       label.appendChild(input);
       els.fieldEditor.appendChild(label);
     });
+  }
+
+  function renderProgrammeConverter() {
+    const box = document.createElement("div");
+    box.className = "programme-converter";
+    box.innerHTML = `
+      <strong>Convertir un copier-coller</strong>
+      <span>Colle ici le texte brut de la fédération, puis transforme-le en lignes prêtes pour l'affiche.</span>
+      <textarea class="programme-source" rows="5" placeholder="SAMEDI 12 SEPTEMBRE 2026 - 10:00\nORNANS 1\n-\nDOUBS 1\nU15 D1 Automne - POULE A\nSTADE ANDRÉ BREY 2"></textarea>
+      <button class="secondary-button compact-button programme-convert" type="button">Transformer le programme</button>
+      <small class="programme-converter-status" aria-live="polite"></small>
+    `;
+    const source = box.querySelector(".programme-source");
+    const button = box.querySelector(".programme-convert");
+    const status = box.querySelector(".programme-converter-status");
+    button.addEventListener("click", () => {
+      const result = convertProgrammeText(source.value);
+      if (!result.lines.length) {
+        status.textContent = "Aucun match reconnu. Vérifie que chaque bloc commence par SAMEDI ou DIMANCHE.";
+        return;
+      }
+      state.fields.items = result.lines.join("\n");
+      if (result.dateLabel) state.fields.date = result.dateLabel;
+      renderFieldEditor();
+      requestRender();
+      saveDraftDebounced();
+      const count = result.lines.length;
+      status.textContent = `${count} match${count > 1 ? "s" : ""} transformé${count > 1 ? "s" : ""}.`;
+    });
+    els.fieldEditor.appendChild(box);
+  }
+
+  function convertProgrammeText(raw) {
+    const rows = String(raw || "")
+      .replace(/\r/g, "")
+      .replace(/[\u00a0\u200b]/g, " ")
+      .split("\n")
+      .map((row) => row.trim())
+      .filter(Boolean);
+    const blocks = [];
+    rows.forEach((row) => {
+      if (isProgrammeDateHeader(row)) blocks.push([row]);
+      else if (blocks.length) blocks[blocks.length - 1].push(row);
+    });
+    const lines = [];
+    const dates = [];
+
+    blocks.forEach((block) => {
+      const header = block[0] || "";
+      const matchRows = block.slice(1);
+      const headerParts = header.replace(/\s+/g, " ").split(" ");
+      const dayName = String(headerParts[0] || "").toUpperCase();
+      const isDay = dayName === "SAMEDI" || dayName === "DIMANCHE";
+      const matchHeader = isDay && headerParts.length >= 5;
+      if (!matchHeader || matchRows.length < 3) return;
+      const day = dayName.startsWith("SAM") ? "SAM" : "DIM";
+      const time = headerParts[headerParts.length - 1].replace(/^0/, "").replace(":", "h");
+      const stadiumIndex = matchRows.findIndex((row) => /^STADE\b/i.test(row));
+      const stadium = shortenProgrammeStadium(stadiumIndex >= 0 ? matchRows[stadiumIndex] : "");
+      const usedIndexes = new Set(stadiumIndex >= 0 ? [stadiumIndex] : []);
+      const separatorIndex = matchRows.findIndex((row) => /^[-–—\s]+$/.test(row));
+      let home = "";
+      let away = "";
+      if (separatorIndex > 0) {
+        usedIndexes.add(separatorIndex - 1);
+        usedIndexes.add(separatorIndex);
+        usedIndexes.add(separatorIndex + 1);
+        home = shortenProgrammeTeam(matchRows[separatorIndex - 1]);
+        away = shortenProgrammeTeam(matchRows[separatorIndex + 1]);
+      } else {
+        const matchupIndex = matchRows.findIndex((row) => !/^STADE\b/i.test(row) && /\s[-–—]\s/.test(row));
+        if (matchupIndex >= 0) {
+          usedIndexes.add(matchupIndex);
+          const matchup = matchRows[matchupIndex].split(/\s+[-–—]\s+/);
+          home = shortenProgrammeTeam(matchup[0]);
+          away = shortenProgrammeTeam(matchup.slice(1).join(" - "));
+        } else {
+          home = shortenProgrammeTeam(matchRows[0]);
+          away = shortenProgrammeTeam(matchRows[1]);
+          usedIndexes.add(0);
+          usedIndexes.add(1);
+        }
+      }
+      const competition = shortenProgrammeCompetition(
+        matchRows.find((row, index) => !usedIndexes.has(index) && !/^[-–—\s]+$/.test(row)) || "",
+      );
+      const age = competition.match(/\bU(11|13|14|15)\b/i)?.[1];
+      home = addProgrammeTeamAge(home, age);
+      away = addProgrammeTeamAge(away, age);
+      if (!home || !away || !competition) return;
+      lines.push(`${day} - ${time} - ${competition} -- ${home} vs ${away}${stadium ? ` - ${stadium}` : ""}`);
+      dates.push({ day: day === "SAM" ? "Samedi" : "Dimanche", date: headerParts[1], month: headerParts[2], year: headerParts[3] });
+    });
+
+    return { lines, dateLabel: buildProgrammeDateLabel(dates) };
+  }
+
+  function isProgrammeDateHeader(value) {
+    const parts = String(value || "").replace(/\s+/g, " ").split(" ");
+    return (parts[0] === "SAMEDI" || parts[0] === "DIMANCHE") &&
+      /^\d{1,2}$/.test(parts[1] || "") &&
+      /^\d{4}$/.test(parts[3] || "") &&
+      /^\d{1,2}:\d{2}$/.test(parts[parts.length - 1] || "");
+  }
+
+  function shortenProgrammeTeam(value) {
+    return String(value || "")
+      .replace(/\bSOCHAUX\s+MONTB\.\s+FC\b/i, "SOCHAUX")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function addProgrammeTeamAge(value, age) {
+    if (!age || !/^DOUBS\s+\d+$/i.test(value)) return value;
+    return `${value} U${age}`;
+  }
+
+  function shortenProgrammeCompetition(value) {
+    const clean = String(value || "").replace(/\s+/g, " ").trim();
+    const beforePool = clean.split(/\s+-\s+POULE\b/i)[0].trim();
+    const pool = clean.match(/\bPOULE\s+(.+)$/i)?.[1]?.trim();
+    const category = beforePool.replace(/\s+/g, " ").trim();
+    if (!pool) return category;
+    return `${category} - POULE ${pool}`;
+  }
+
+  function shortenProgrammeStadium(value) {
+    return String(value || "").replace(/\s+/g, " ").trim();
+  }
+
+  function buildProgrammeDateLabel(dates) {
+    if (!dates.length) return "";
+    const unique = dates.filter((item, index, list) =>
+      list.findIndex((other) => other.date === item.date && other.month === item.month && other.year === item.year) === index,
+    );
+    const month = unique[0].month.toLowerCase();
+    if (unique.length === 1) return `${unique[0].day} ${unique[0].date} ${month} ${unique[0].year}`;
+    return `${unique[0].day} ${unique[0].date} & ${unique[1].day.toLowerCase()} ${unique[1].date} ${month} ${unique[0].year}`;
   }
 
   function fieldUiLimits(item) {
@@ -2482,17 +2623,17 @@
       const ry = listTop + i * rowH;
 
       // Format attendu : "SAM - 10h00 - Categorie -- Equipe1 vs Equipe2 - Stade"
-      // Separateurs ASCII purs : tiret simple (-) entre champs, double tiret (--) avant les noms
+      // La categorie peut contenir des tirets : le double tiret et "vs" sont les separateurs fiables.
       let jour = "", heure = "", categorie = "", equipes = "", stade = "";
       const m = raw.match(
-        /^(SAM|DIM)\s*-\s*([0-9h:]+)\s*-\s*([^-]+?)\s*--\s*(.+?)(?:\s*-\s*(.+))?$/i
+        /^(SAM|DIM)\s*-\s*([0-9h:]+)\s*-\s*(.*?)\s*--\s*(.*?)\s+vs\s+(.*?)(?:\s+-\s+(.+))?$/i
       );
       if (m) {
         jour      = m[1].toUpperCase();
         heure     = m[2].trim();
         categorie = m[3].trim();
-        equipes   = m[4].trim();
-        stade     = (m[5] || "").trim();
+        equipes   = `${m[4].trim()} vs ${m[5].trim()}`;
+        stade     = (m[6] || "").trim();
       }
       const parsed = Boolean(m);
 
