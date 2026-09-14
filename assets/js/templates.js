@@ -193,10 +193,10 @@
           field(
             "items",
             "Lignes du programme",
-            "SAM - 10h00 - U15 D1 -- Morteau Montlebon vs DOUBS 1 - Stade Henri Schaller\nSAM - 11h00 - U14 Excellence -- DOUBS 21 vs Exincourt 21 - Stade G. Griffon\nSAM - 16h45 - U18 D2 -- DOUBS 22 vs GJ Haut Doubs Horlo 22 - Stade G. Griffon\nSAM - 16h45 - U18 D2 -- Les Quatre Monts 21 vs DOUBS 21 - Stade R. Parisot\nSAM - 20h00 - Dept. 2 -- DOUBS 2 vs Chateau de Joux 2 - Stade G. Griffon\nDIM - 10h00 - Feminines D1F -- DOUBS 1 vs Morteau Montlebon - Stade G. Griffon\nDIM - 15h00 - Dept. 3 -- Mouthe FC 1 vs DOUBS 3 - Stade Municipal\nDIM - 15h00 - REGIONAL 3 -- Rochefort 1 vs DOUBS 1 - Stade Municipal",
+            "SAM - 10h00 - U15 D1 -- Morteau Montlebon vs DOUBS 1 - Stade Henri Schaller\nSAM - 11h00 - U14 Excellence -- DOUBS 21 vs Exincourt 21 - Stade G. Griffon\nSAM - 16h45 - U18 D2 -- DOUBS 22 vs GJ Haut Doubs Horlo 22 - Stade G. Griffon\nSAM - 16h45 - U18 D2 -- Les Quatre Monts 21 vs DOUBS 21 - Stade R. Parisot\nSAM - 20h00 - Dept. 2 -- DOUBS 2 SG vs Chateau de Joux 2 - Stade G. Griffon\nDIM - 10h00 - Feminines D1F -- DOUBS 1 SF vs Morteau Montlebon - Stade G. Griffon\nDIM - 15h00 - Dept. 3 -- Mouthe FC 1 vs DOUBS 3 SG - Stade Municipal\nDIM - 15h00 - REGIONAL 3 -- Rochefort 1 vs DOUBS 1 SG - Stade Municipal",
             "textarea",
           ),
-          field("footer", "Mention", "Allez l'ES Doubs !"),
+          field("footer", "Mention", "Allez les Doubs !"),
         ],
       },
       {

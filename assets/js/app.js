@@ -470,6 +470,8 @@
       const age = competition.match(/\bU(11|13|14|15)\b/i)?.[1];
       home = addProgrammeTeamAge(home, age);
       away = addProgrammeTeamAge(away, age);
+      home = labelProgrammeTeam(home, competition);
+      away = labelProgrammeTeam(away, competition);
       if (!home || !away || !competition) return;
       lines.push(`${day} - ${time} - ${competition} -- ${home} vs ${away}${stadium ? ` - ${stadium}` : ""}`);
       dates.push({ day: day === "SAM" ? "Samedi" : "Dimanche", date: headerParts[1], month: headerParts[2], year: headerParts[3] });
@@ -496,6 +498,14 @@
   function addProgrammeTeamAge(value, age) {
     if (!age || !/^DOUBS\s+\d+$/i.test(value)) return value;
     return `${value} U${age}`;
+  }
+
+  function labelProgrammeTeam(value, competition) {
+    if (!/^DOUBS\s+[123]$/i.test(value)) return value;
+    if (/FÉMININES?|FEMININES?|D1F/i.test(competition)) {
+      return `${value} SF`;
+    }
+    return `${value} SG`;
   }
 
   function shortenProgrammeCompetition(value) {
@@ -938,7 +948,7 @@
   const L = {
     PAD: 52, // marge latérale générale
     HDR_H: 148, // hauteur de la zone en-tête (logo + icône)
-    FOOT_H: 132, // hauteur banderole bas
+    FOOT_H: 92, // hauteur banderole bas
     PILL_H: 48, // hauteur pill/capsule
     ICON: 80, // taille badge icône HG
     LOGO: 104, // taille badge logo HD
@@ -2549,13 +2559,13 @@
     // Pas de pagination — tous les matchs sont affichés, rowH s'adapte automatiquement
 
     // ── 1. FOND très sombre — les joueurs passent en texture ──
-    drawBg(photo, w, h, 0.15);
+    drawBg(photo, w, h, 0.10);
     // Overlay uniforme très opaque → le texte prime toujours
-    ctx.fillStyle = "rgba(8,10,20,0.82)";
+    ctx.fillStyle = "rgba(8,10,20,0.88)";
     ctx.fillRect(0, 0, w, h);
     // Légère texture diagonale rouge en coin HG (identité ESD)
     const triGrad = ctx.createLinearGradient(0, 0, w * 0.55, h * 0.48);
-    triGrad.addColorStop(0,   rgba(b.red, 0.22));
+    triGrad.addColorStop(0,   rgba(b.red, 0.14));
     triGrad.addColorStop(1,   "rgba(0,0,0,0)");
     ctx.fillStyle = triGrad;
     ctx.fillRect(0, 0, w, h);
@@ -2613,14 +2623,42 @@
     const footerH  = L.FOOT_H * u;
     const listBot  = h - footerH - GAP * 0.5;
     const available = listBot - listTop;
-    const rowCount  = visibleItems.length + (hiddenCount > 0 ? 1 : 0);
-    const rowH      = Math.max(52 * u, Math.min(110 * u, available / Math.max(rowCount, 1)));
-    const nameSize  = Math.max(15 * u, Math.min(28 * u, rowH * 0.32));
-    const metaSize  = Math.max(12 * u, Math.min(20 * u, rowH * 0.22));
+    const daySlot = 0.72;
+    const dayBreaks = visibleItems.reduce((count, raw, index) => {
+      const day = raw.match(/^(SAM|DIM)\s*-/i)?.[1]?.toUpperCase();
+      const previousDay = visibleItems[index - 1]?.match(/^(SAM|DIM)\s*-/i)?.[1]?.toUpperCase();
+      return count + (day && day !== previousDay ? daySlot : 0);
+    }, 0);
+    const featuredRows = visibleItems.filter((raw) => /\bDOUBS\s+1\s+SG\b/i.test(raw)).length * 0.35;
+    const rowCount  = visibleItems.length + dayBreaks + featuredRows + (hiddenCount > 0 ? 1 : 0);
+    const rowH      = Math.max(44 * u, Math.min(110 * u, available / Math.max(rowCount, 1)));
+    const nameSize  = Math.max(14 * u, Math.min(28 * u, rowH * 0.32));
+    const metaSize  = Math.max(13 * u, Math.min(21 * u, rowH * 0.24));
     const rowW      = w - PAD * 2;
+    let currentDay = "";
+    let rowIndex = 0;
 
     visibleItems.forEach((raw, i) => {
-      const ry = listTop + i * rowH;
+      const itemDay = raw.match(/^(SAM|DIM)\s*-/i)?.[1]?.toUpperCase() || "";
+      if (itemDay && itemDay !== currentDay) {
+        const dayY = listTop + rowIndex * rowH;
+        const dayH = rowH * daySlot - 6 * u;
+        ctx.fillStyle = itemDay === "SAM" ? b.red : b.blue;
+        roundRect(PAD, dayY + 2 * u, rowW, dayH, 10 * u);
+        ctx.fill();
+        drawFitText(
+          itemDay === "SAM" ? "SAMEDI" : "DIMANCHE",
+          PAD + rowW / 2,
+          dayY + dayH * 0.70,
+          rowW - 28 * u,
+          { size: Math.max(22 * u, Math.min(34 * u, dayH * 0.68)), min: 19 * u, color: "#fff", weight: 900, family: b.accentFont, align: "center" },
+        );
+        currentDay = itemDay;
+        rowIndex += daySlot;
+      }
+      const ry = listTop + rowIndex * rowH;
+      const isFeaturedMatch = /\bDOUBS\s+1\s+SG\b/i.test(raw);
+      const itemRowH = isFeaturedMatch ? rowH * 1.35 : rowH;
 
       // Format attendu : "SAM - 10h00 - Categorie -- Equipe1 vs Equipe2 - Stade"
       // La categorie peut contenir des tirets : le double tiret et "vs" sont les separateurs fiables.
@@ -2635,46 +2673,60 @@
         equipes   = `${m[4].trim()} vs ${m[5].trim()}`;
         stade     = (m[6] || "").trim();
       }
+      if (!stade && /VILLIERS\s+LE\s+LAC/i.test(equipes)) {
+        stade = "Stade Georges Griffon";
+      }
       const parsed = Boolean(m);
+      rowIndex += isFeaturedMatch ? 1.35 : 1;
 
       // ── Fond de la carte ───────────────────────────────────
       // Fond légèrement plus clair sur les lignes alternées
-      ctx.fillStyle = i % 2 === 0 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.05)";
-      roundRect(PAD, ry + 2 * u, rowW, rowH - 8 * u, 10 * u);
+      ctx.fillStyle = isFeaturedMatch
+        ? rgba(b.red, 0.18)
+        : i % 2 === 0
+          ? "rgba(255,255,255,0.08)"
+          : "rgba(255,255,255,0.05)";
+      roundRect(PAD, ry + 2 * u, rowW, itemRowH - 8 * u, 10 * u);
       ctx.fill();
+      if (isFeaturedMatch) {
+        ctx.strokeStyle = b.gold;
+        ctx.lineWidth = Math.max(1.5, 1.7 * u);
+        roundRect(PAD + 6 * u, ry + 8 * u, rowW - 12 * u, itemRowH - 20 * u, 7 * u);
+        ctx.stroke();
+      }
 
       if (parsed) {
         // ── ZONE HEURE (gauche, 14% de la largeur) ────────────
         const heureZoneW = rowW * 0.14;
         const heureX     = PAD + heureZoneW / 2;
 
-        // Pastille jour (SAM=rouge, DIM=bleu)
-        const jourColor = jour === "SAM" ? b.red : b.blue;
-        ctx.fillStyle   = jourColor;
-        const jourH     = Math.max(18 * u, rowH * 0.22);
         const jourW     = heureZoneW - 6 * u;
-        const jourY     = ry + 2 * u + (rowH - 8 * u) * 0.10;
-        roundRect(PAD + 3 * u, jourY, jourW, jourH, jourH * 0.35);
+
+        // Pastille sombre dédiée à l'horaire pour une lecture immédiate sur mobile.
+        ctx.fillStyle = "rgba(10,25,48,0.46)";
+        ctx.strokeStyle = "rgba(255,255,255,0.16)";
+        ctx.lineWidth = Math.max(1, 1.5 * u);
+        roundRect(PAD + 3 * u, ry + 7 * u, jourW, itemRowH - 18 * u, 7 * u);
         ctx.fill();
-        drawFitText(jour, PAD + 3 * u + jourW / 2, jourY + jourH * 0.74, jourW, {
-          size: metaSize * 0.82, min: 10 * u, color: "#fff", weight: 900,
-          align: "center", family: b.accentFont,
-        });
+        ctx.stroke();
 
         // Heure
-        drawFitText(heure, PAD + 3 * u, jourY + jourH + 5 * u + nameSize * 0.9, jourW, {
-          size: nameSize * 0.96, min: 12 * u, color: "#fff", weight: 900,
+        drawFitText(heure, PAD + 3 * u, ry + 2 * u + (itemRowH - 8 * u) * 0.68, jourW, {
+          size: nameSize * 1.08, min: 13 * u, color: "#fff", weight: 900,
           align: "center", family: b.accentFont,
         });
 
         // ── ZONE NOMS (centre, 68% de la largeur) ─────────────
         const nameZoneX = PAD + heureZoneW + 8 * u;
         const nameZoneW = rowW * 0.68;
-        const midY      = ry + 2 * u + (rowH - 8 * u) / 2;
+        const contentTop = ry + (isFeaturedMatch ? 12 : 2) * u;
+        const categoryY = contentTop + itemRowH * (isFeaturedMatch ? 0.25 : 0.18);
+        const teamY = contentTop + itemRowH * (isFeaturedMatch ? 0.55 : 0.57);
+        const stadiumY = contentTop + itemRowH * 0.84;
 
         // Catégorie en doré, petit
-        drawFitText(categorie, nameZoneX, midY - nameSize * 0.62, nameZoneW, {
-          size: metaSize, min: 10 * u, color: b.gold, weight: 800, family: b.accentFont,
+        drawFitText(categorie, nameZoneX, categoryY, nameZoneW, {
+          size: metaSize * 0.84, min: 10 * u, color: b.goldLight, weight: 700, family: b.bodyFont,
         });
 
         // Noms des équipes — partie principale
@@ -2688,32 +2740,37 @@
           // Ligne équipe 1 — vs — équipe 2, séparés par un tiret
           const isHome = team2.toLowerCase().includes("doubs");
           const isAway = team1.toLowerCase().includes("doubs");
-          const t1Col  = isAway ? b.gold : "#fff";
-          const t2Col  = isHome ? b.gold : "#fff";
+          const t1Col  = isAway ? b.goldLight : "#fff";
+          const t2Col  = isHome ? b.goldLight : "#fff";
+          const t1Weight = isAway ? 950 : 800;
+          const t2Weight = isHome ? 950 : 800;
 
           // Équipe 1
-          drawFitText(team1, nameZoneX, midY + nameSize * 0.22, nameZoneW * 0.44, {
-            size: nameSize, min: 11 * u, color: t1Col, weight: 900, family: b.accentFont,
+          drawFitText(team1, nameZoneX, teamY, nameZoneW * 0.44, {
+            size: nameSize, min: 11 * u, color: t1Col, weight: t1Weight, family: b.accentFont,
+            stroke: "rgba(0,0,0,0.78)",
           });
           // "–" central
-          drawFitText("–", nameZoneX + nameZoneW * 0.46, midY + nameSize * 0.22, nameZoneW * 0.08, {
+          drawFitText("–", nameZoneX + nameZoneW * 0.46, teamY, nameZoneW * 0.08, {
             size: nameSize, min: 11 * u, color: "rgba(255,255,255,0.45)", weight: 700, align: "center",
           });
           // Équipe 2
-          drawFitText(team2, nameZoneX + nameZoneW * 0.56, midY + nameSize * 0.22, nameZoneW * 0.44, {
-            size: nameSize, min: 11 * u, color: t2Col, weight: 900, family: b.accentFont,
+          drawFitText(team2, nameZoneX + nameZoneW * 0.56, teamY, nameZoneW * 0.44, {
+            size: nameSize, min: 11 * u, color: t2Col, weight: t2Weight, family: b.accentFont,
+            stroke: "rgba(0,0,0,0.78)",
           });
         } else {
           // Ligne brute si pas de "vs"
-          drawFitText(equipes, nameZoneX, midY + nameSize * 0.22, nameZoneW, {
+          drawFitText(equipes, nameZoneX, teamY, nameZoneW, {
             size: nameSize, min: 11 * u, color: "#fff", weight: 900, family: b.accentFont,
+            stroke: "rgba(0,0,0,0.78)",
           });
         }
 
         // Stade en petit dessous
         if (stade) {
-          drawFitText("@ " + stade, nameZoneX, midY + nameSize * 1.06, nameZoneW, {
-            size: metaSize * 0.88, min: 9 * u, color: "rgba(255,255,255,0.55)", weight: 600,
+          drawFitText("@ " + stade, nameZoneX, stadiumY, nameZoneW, {
+            size: metaSize * 0.76, min: 9 * u, color: "rgba(255,255,255,0.78)", weight: 600,
             family: b.bodyFont,
           });
         }
@@ -2721,8 +2778,8 @@
         // ── BADGE DOM/EXT (droite, 18%) ────────────────────────
         const badgeZoneX = PAD + heureZoneW + 8 * u + rowW * 0.68 + 8 * u;
         const badgeW     = rowW - heureZoneW - rowW * 0.68 - 16 * u;
-        const badgeH2    = Math.max(22 * u, rowH * 0.28);
-        const badgeY     = ry + 2 * u + (rowH - 8 * u) / 2 - badgeH2 / 2;
+        const badgeH2    = Math.max(22 * u, itemRowH * 0.25);
+        const badgeY     = ry + 2 * u + (itemRowH - 8 * u) / 2 - badgeH2 / 2;
 
         // DOM/EXT : DOUBS en team1 (gauche) = équipe qui reçoit = DOMICILE
         //           DOUBS en team2 (droite) = équipe qui se déplace = EXTÉRIEUR
@@ -2730,7 +2787,7 @@
         const doubsIsTeam2 = team2.toUpperCase().includes("DOUBS");
         const isHome  = doubsIsTeam1;   // DOUBS joue à domicile (côté gauche)
         const isAway  = doubsIsTeam2;   // DOUBS joue à l'extérieur (côté droite)
-        const badgeLabel  = isHome ? "DOMICILE" : "EXTERIEUR";
+        const badgeLabel  = isHome ? "DOMICILE" : "EXTÉRIEUR";
         const badgeColor  = isHome ? b.red : b.blue;
 
         drawPill(badgeLabel, badgeZoneX, badgeY, Math.min(badgeW, 160 * u), badgeH2, badgeColor, "#fff");
@@ -2755,7 +2812,7 @@
     }
 
     // ── FOOTER ────────────────────────────────────────────────
-    drawFooterBand([text("footer") || "Allez l'ES Doubs !"], w, h, rgba(b.dark, 0.96));
+    drawFooterBand([text("footer") || "Allez les Doubs !"], w, h, rgba(b.dark, 0.96));
   }
 
   function renderTable({ format, photo, logo, icon }) {
