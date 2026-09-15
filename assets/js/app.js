@@ -533,7 +533,7 @@
 
   function fieldUiLimits(item) {
     const k = item.key.toLowerCase();
-    if (k === "items") return { maxLength: 900, rows: 8 };
+    if (k === "items") return { maxLength: 4000, rows: 8 };
     if (["details", "quote"].includes(k)) return { maxLength: 420, rows: 5 };
     if (["title", "subtitle", "competition"].includes(k))
       return { maxLength: 90, rows: 2 };
@@ -2686,12 +2686,14 @@
         : i % 2 === 0
           ? "rgba(255,255,255,0.08)"
           : "rgba(255,255,255,0.05)";
-      roundRect(PAD, ry + 2 * u, rowW, itemRowH - 8 * u, 10 * u);
+      const cardY = ry + 2 * u;
+      const cardH = Math.max(1, itemRowH - 8 * u);
+      roundRect(PAD, cardY, rowW, cardH, 10 * u);
       ctx.fill();
       if (isFeaturedMatch) {
         ctx.strokeStyle = b.gold;
         ctx.lineWidth = Math.max(1.5, 1.7 * u);
-        roundRect(PAD + 6 * u, ry + 8 * u, rowW - 12 * u, itemRowH - 20 * u, 7 * u);
+        roundRect(PAD + 6 * u, ry + 8 * u, rowW - 12 * u, Math.max(1, itemRowH - 20 * u), 7 * u);
         ctx.stroke();
       }
 
@@ -2719,14 +2721,18 @@
         // ── ZONE NOMS (centre, 68% de la largeur) ─────────────
         const nameZoneX = PAD + heureZoneW + 8 * u;
         const nameZoneW = rowW * 0.68;
-        const contentTop = ry + (isFeaturedMatch ? 12 : 2) * u;
-        const categoryY = contentTop + itemRowH * (isFeaturedMatch ? 0.25 : 0.18);
-        const teamY = contentTop + itemRowH * (isFeaturedMatch ? 0.55 : 0.57);
-        const stadiumY = contentTop + itemRowH * 0.84;
+        const contentTop = isFeaturedMatch ? ry + 22 * u : cardY + 6 * u;
+        const contentBottom = isFeaturedMatch
+          ? ry + itemRowH - 16 * u
+          : cardY + cardH - 7 * u;
+        const contentH = Math.max(1, contentBottom - contentTop);
+        const categoryY = contentTop + contentH * (isFeaturedMatch ? 0.12 : 0.10);
+        const teamY = contentTop + contentH * (isFeaturedMatch ? 0.62 : 0.55);
+        const stadiumY = contentTop + contentH * (isFeaturedMatch ? 0.92 : 0.90);
 
         // Catégorie en doré, petit
         drawFitText(categorie, nameZoneX, categoryY, nameZoneW, {
-          size: metaSize * 0.84, min: 10 * u, color: b.goldLight, weight: 700, family: b.bodyFont,
+          size: metaSize * 0.74, min: 9 * u, color: b.goldLight, weight: 700, family: b.bodyFont,
         });
 
         // Noms des équipes — partie principale
@@ -2778,7 +2784,7 @@
         // ── BADGE DOM/EXT (droite, 18%) ────────────────────────
         const badgeZoneX = PAD + heureZoneW + 8 * u + rowW * 0.68 + 8 * u;
         const badgeW     = rowW - heureZoneW - rowW * 0.68 - 16 * u;
-        const badgeH2    = Math.max(22 * u, itemRowH * 0.25);
+        const badgeH2    = Math.max(18 * u, itemRowH * 0.18);
         const badgeY     = ry + 2 * u + (itemRowH - 8 * u) / 2 - badgeH2 / 2;
 
         // DOM/EXT : DOUBS en team1 (gauche) = équipe qui reçoit = DOMICILE
@@ -2790,7 +2796,32 @@
         const badgeLabel  = isHome ? "DOMICILE" : "EXTÉRIEUR";
         const badgeColor  = isHome ? b.red : b.blue;
 
-        drawPill(badgeLabel, badgeZoneX, badgeY, Math.min(badgeW, 160 * u), badgeH2, badgeColor, "#fff");
+        drawPill(badgeLabel, badgeZoneX, badgeY, Math.min(badgeW, 128 * u), badgeH2, badgeColor, "#fff");
+
+        if (isFeaturedMatch) {
+          const featuredLabel = buildFeaturedProgrammeLabel(categorie);
+          const labelH = Math.max(14 * u, Math.min(18 * u, itemRowH * 0.24));
+          const labelW = Math.min(rowW * 0.22, 218 * u);
+          const labelX = PAD + rowW * 0.5 - labelW * 0.5;
+          const labelY = ry + 5 * u;
+          ctx.save();
+          ctx.fillStyle = b.gold;
+          ctx.strokeStyle = rgba(b.dark, 0.72);
+          ctx.lineWidth = Math.max(1, 1.15 * u);
+          roundRect(labelX, labelY, labelW, labelH, 4 * u);
+          ctx.fill();
+          ctx.stroke();
+          drawFitText(featuredLabel, labelX + 6 * u, labelY + labelH * 0.70, labelW - 12 * u, {
+            size: labelH * 0.56,
+            min: 7 * u,
+            color: b.dark,
+            weight: 900,
+            family: b.bodyFont,
+            align: "center",
+            maxHeight: labelH * 0.7,
+          });
+          ctx.restore();
+        }
 
       } else {
         // ── Ligne brute (format non structuré) ────────────────
@@ -3396,6 +3427,23 @@
   // ═══════════════════════════════════════════════════════════
   //  HELPERS UTILITAIRES
   // ═══════════════════════════════════════════════════════════
+
+  function buildFeaturedProgrammeLabel(category) {
+    const clean = String(category || "").replace(/\s+/g, " ").trim();
+    const plain = clean
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase();
+    if (/\bREGIONAL\s*3\b/.test(plain)) return "AFFICHE SÉNIORS - RÉGIONAL 3";
+
+    const shortCategory = clean
+      .replace(/\bidverde\b/gi, "")
+      .replace(/\s+-\s+POULE\b.*$/i, "")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+      .toUpperCase();
+    return shortCategory ? `AFFICHE SÉNIORS - ${shortCategory}` : "AFFICHE SÉNIORS";
+  }
 
   function unit(w, h) {
     return Math.min(w, h) / 1080;
